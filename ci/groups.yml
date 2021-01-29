@@ -1,0 +1,12 @@
+groups:
+  - name: master
+    jobs:
+      - management-dev
+      - management
+  - name: pull-request
+    jobs:
+      - dataworks-repo-template-docker-pr
+  - name: mirror
+    jobs:
+      - mirror-dwpdigital-dataworks-repo-template-docker-dev
+      - mirror-dwpdigital-dataworks-repo-template-docker

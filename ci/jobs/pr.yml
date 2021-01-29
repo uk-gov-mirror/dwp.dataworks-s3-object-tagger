@@ -1,0 +1,31 @@
+jobs:
+  - name: dataworks-repo-template-docker-pr
+    plan:
+      - get: dataworks-repo-template-docker-pr
+        trigger: true
+        version: every
+      - put: dataworks-repo-template-docker-pr
+        params:
+          path: dataworks-repo-template-docker-pr
+          status: pending
+        input_mapping:
+          dataworks-repo-template-docker: dataworks-repo-template-docker-pr
+      - .: (( inject meta.plan.terraform-bootstrap ))
+        input_mapping:
+          dataworks-repo-template-docker: dataworks-repo-template-docker-pr
+      - .: (( inject meta.plan.terraform-plan ))
+        input_mapping:
+          dataworks-repo-template-docker: dataworks-repo-template-docker-pr
+        params:
+          TF_WORKSPACE: "management-dev"
+          DETAILED_EXITCODE: ""
+        on_failure:
+          put: dataworks-repo-template-docker-pr
+          params:
+            path: dataworks-repo-template-docker-pr
+            status: failure
+        on_success:
+          put: dataworks-repo-template-docker-pr
+          params:
+            path: dataworks-repo-template-docker-pr
+            status: success

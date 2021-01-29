@@ -1,0 +1,15 @@
+jobs:
+  - name: management
+    max_in_flight: 1
+    plan:
+      - get: dataworks-repo-template-docker
+        trigger: true
+        passed:
+          - management-dev
+      - .: (( inject meta.plan.terraform-bootstrap ))
+      - .: (( inject meta.plan.terraform-apply ))
+        params:
+          TF_WORKSPACE: "management"
+      - .: (( inject meta.plan.terraform-plan ))
+        params:
+          TF_WORKSPACE: "management"
