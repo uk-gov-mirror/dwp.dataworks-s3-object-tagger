@@ -5,8 +5,8 @@ groups:
       - management
   - name: pull-request
     jobs:
-      - dataworks-repo-template-docker-pr
+      - dataworks-s3-object-tagger-pr
   - name: mirror
     jobs:
-      - mirror-dwpdigital-dataworks-repo-template-docker-dev
-      - mirror-dwpdigital-dataworks-repo-template-docker
+      - mirror-dwpdigital-dataworks-s3-object-tagger-dev
+      - mirror-dwpdigital-dataworks-s3-object-tagger

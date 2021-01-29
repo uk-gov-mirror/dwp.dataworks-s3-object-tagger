@@ -2,7 +2,7 @@ jobs:
   - name: management-dev
     max_in_flight: 1
     plan:
-      - get: dataworks-repo-template-docker
+      - get: dataworks-s3-object-tagger
         trigger: true
       - .: (( inject meta.plan.terraform-bootstrap ))
       - .: (( inject meta.plan.terraform-apply ))

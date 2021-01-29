@@ -3,7 +3,7 @@ name: High vulns Snyk PR scan
 on: pull_request
 
 env:
-  IMAGE_NAME: dwpdigital/dataworks-repo-template-docker
+  IMAGE_NAME: dwpdigital/dataworks-s3-object-tagger
 
 jobs:
   docker-build-and-scan:

@@ -9,7 +9,7 @@ on:
       - '*.md'
 
 env:
-  IMAGE_NAME: dwpdigital/dataworks-repo-template-docker
+  IMAGE_NAME: dwpdigital/dataworks-s3-object-tagger
 
 jobs:
   get-publish-version:

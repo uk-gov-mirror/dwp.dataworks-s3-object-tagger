@@ -1,44 +1,44 @@
 resources:
-  - name: dwpdigital-dataworks-repo-template-docker
+  - name: dwpdigital-dataworks-s3-object-tagger
     type: registry-image-resource
     source:
-      repository: dwpdigital/dataworks-repo-template-docker
+      repository: dwpdigital/dataworks-s3-object-tagger
     check_every: 5m
 
-  - name: ecr-dwpdigital-dataworks-repo-template-docker-dev
+  - name: ecr-dwpdigital-dataworks-s3-object-tagger-dev
     .: (( inject meta.resources.ecr-resource ))
     source:
-      repository: "dataworks-repo-template-docker"
+      repository: "dataworks-s3-object-tagger"
 
-  - name: ecr-dwpdigital-dataworks-repo-template-docker
+  - name: ecr-dwpdigital-dataworks-s3-object-tagger
     .: (( inject meta.resources.ecr-resource ))
     source:
-      repository: "dataworks-repo-template-docker"
+      repository: "dataworks-s3-object-tagger"
       aws_role_arn: arn:aws:iam::((dataworks.aws_management_acc)):role/ci
 
 jobs:
-  - name: mirror-dwpdigital-dataworks-repo-template-docker-dev
-    serial_groups: [dataworks-repo-template-docker]
+  - name: mirror-dwpdigital-dataworks-s3-object-tagger-dev
+    serial_groups: [dataworks-s3-object-tagger]
     plan:
-      - get: dwpdigital-dataworks-repo-template-docker
+      - get: dwpdigital-dataworks-s3-object-tagger
         trigger: true
         params:
           format: oci
         attempts: 3
-      - put: ecr-dwpdigital-dataworks-repo-template-docker-dev
+      - put: ecr-dwpdigital-dataworks-s3-object-tagger-dev
         params:
-          image: "dwpdigital-dataworks-repo-template-docker/image.tar"
+          image: "dwpdigital-dataworks-s3-object-tagger/image.tar"
         attempts: 3
 
-  - name: mirror-dwpdigital-dataworks-repo-template-docker
-    serial_groups: [dataworks-repo-template-docker]
+  - name: mirror-dwpdigital-dataworks-s3-object-tagger
+    serial_groups: [dataworks-s3-object-tagger]
     plan:
-      - get: dwpdigital-dataworks-repo-template-docker
+      - get: dwpdigital-dataworks-s3-object-tagger
         trigger: true
         params:
           format: oci
         attempts: 3
-      - put: ecr-dwpdigital-dataworks-repo-template-docker
+      - put: ecr-dwpdigital-dataworks-s3-object-tagger
         params:
-          image: "dwpdigital-dataworks-repo-template-docker/image.tar"
+          image: "dwpdigital-dataworks-s3-object-tagger/image.tar"
         attempts: 3
