@@ -8,8 +8,6 @@ jobs:
         params:
           path: dataworks-s3-object-tagger-pr
           status: pending
-        input_mapping:
-          dataworks-s3-object-tagger: dataworks-s3-object-tagger-pr
       - .: (( inject meta.plan.terraform-bootstrap ))
         input_mapping:
           dataworks-s3-object-tagger: dataworks-s3-object-tagger-pr
@@ -17,7 +15,7 @@ jobs:
         input_mapping:
           dataworks-s3-object-tagger: dataworks-s3-object-tagger-pr
         params:
-          TF_WORKSPACE: "management-dev"
+          TF_WORKSPACE: "management"
           DETAILED_EXITCODE: ""
         on_failure:
           put: dataworks-s3-object-tagger-pr
