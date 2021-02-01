@@ -1,17 +1,10 @@
 db,table,pii
-a,xxxx,true
+uc_pdm_model.db,xxxx,true
 a,yyyy,false
 a,zzzz,
 b,xxxx,false
 b,ffff,
 uc,to_do_type_dim_v,true
-uc_transform,
 
 
-if "uc.db" in string:
 
-/   /
-/////DB-NAME/TABLE-NAME/OBJECT-TO-TAG
-pdm-dataset/hive/external/uc.db/to_do_type_dim_v/000000_0
-
-transform,cohort,true

@@ -4,18 +4,8 @@ import boto3
 
 def read_csv(csv_file):
     with open(csv_file) as csv_file:
-        data = csv.reader(csv_file, delimiter=',')
-        line_count = 0
+        data = csv.DictReader(csv_file, delimiter=',')
         return data
-        # for row in csv_reader:
-        #
-        #     if line_count == 0:
-        #         print(f'Column names are {", ".join(row)}')
-        #         line_count += 1
-        #     else:
-        #         print(f'\t{row[0]} works in the {row[1]} department, and was born in {row[2]}.')
-        #         line_count += 1
-        # print(f'Processed {line_count} lines.')
 
 
 def tag_object(key):
@@ -23,6 +13,37 @@ def tag_object(key):
     objects_to_tag = split_string[-1]
     table_name = split_string[-2]
     db_name = split_string[-3]
+    pii_value = ""
+
+    csv_data = read_csv(args.csv_location)
+
+    for row in csv_data:
+        if row['db'] == db_name and row['table'] == table_name:
+            pii_value == row['pii']
+
+    if pii_value == "":
+        pass
+
+    s3_client.put_object_tagging(
+        Bucket=s3_bucket,
+        Key=key["Key"],
+        Tagging={
+            "TagSet": [
+                {
+                    "Key": "db",
+                    "Value": db_name
+                },
+                {
+                    "Key": "table",
+                    "Value": table_name
+                },
+                {
+                    "Key": "pii",
+                    "Value": pii_value
+                }
+            ]
+        }
+    )
 
 
 if __name__ == "__main__":
@@ -34,8 +55,6 @@ if __name__ == "__main__":
 
     s3_bucket = "/Users/levankirvalidze/IdeaProjects/dataworks-s3-object-tagger" #${published_bucket}
 
-    csv_tables_info = read_csv(args.csv_location)
-    print(csv_tables_info)
     prefix_to_tag = args.path_prefix
 
     s3_client = boto3.client('s3')
@@ -46,9 +65,8 @@ if __name__ == "__main__":
         if "$folder$" not in key["Key"]:
             objects_to_tag.append(key)
 
-    for key in objects_to_tag:
-        tag_object(key["Key"])
-        """check if db in csv, check if table in csv. attempt to tag it"""
+    for row in objects_to_tag:
+        tag_object(row)
 
 
 
