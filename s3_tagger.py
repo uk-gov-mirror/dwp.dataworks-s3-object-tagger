@@ -1,5 +1,6 @@
-import pandas as pd
 import argparse
+import re
+import csv
 import boto3
 import logging
 import os
@@ -22,9 +23,23 @@ def setup_logging(log_level, log_path):
     return app_logger
 
 
-def read_csv(csv_file):
-    table_info = pd.read_csv(csv_file)
-    return table_info
+def read_csv(csv_location, s3_client):
+    csv_dict = {}
+
+    bucket = (re.search("s3://([a-zA-Z0-9-]*)", csv_location)).group(1)
+    key = ((re.search("s3://[a-zA-Z0-9-]*(.*)",csv_location)).group(1)).lstrip("/")
+    file_name = csv_location.split('/')[-1]
+
+    s3_client.download_file(bucket, key, file_name)
+
+    with open(file_name) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["db"] in csv_dict:
+                csv_dict[row["db"]].append({"table": row["table"], "pii": row["pii"]})
+            else:
+                csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
+    return csv_dict
 
 
 def tag_object(key, s3_client, s3_bucket):
@@ -34,12 +49,12 @@ def tag_object(key, s3_client, s3_bucket):
     db_name = split_string[-3]
     pii_value = ""
     tag_info_found = None
-    csv_data = read_csv(args.csv_location)
 
-    for rowindex, row in csv_data.iterrows():
-        if row["db"] == db_name and row["table"] == table_name:
-            tag_info_found = True
-            pii_value = row["pii"]
+    if db_name in csv_data:
+        for table in csv_data[db_name]:
+            if table_name == table["table"]:
+                pii_value = table["pii"]
+                tag_info_found = True
 
     if type(pii_value) != str:
         pii_value = " "
@@ -67,10 +82,8 @@ def get_s3():
     return s3_client
 
 
-def get_objects_in_prefix(s3_bucket, prefix_to_tag, s3_client):
-
-    prefix_to_tag = args.path_prefix
-    objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=prefix_to_tag)[
+def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
+    objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
         "Contents"
     ]
     return objects_in_prefix
@@ -82,28 +95,42 @@ def tag_path(objects_in_prefix, s3_client, s3_bucket):
         if "$folder$" not in key["Key"]:
             objects_to_tag.append(key["Key"])
 
-    logger.info("Found {} objects to tag in specified path".format(len(objects_to_tag)))
+    logger.info(f"Found {len(objects_to_tag)} objects to tag in specified path")
     tagged_objects = 0
     for row in objects_to_tag:
         is_tagged = tag_object(row, s3_client, s3_bucket)
         tagged_objects = tagged_objects + is_tagged
-    logger.info("{} objects were tagged".format(tagged_objects))
+
+    if tagged_objects == 0:
+        logger.warning("No objects tagged")
+    else:
+        logger.info(f"{tagged_objects} objects were tagged")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Take locations as args")
     parser.add_argument("--csv_location", help="The location of the CSV file to parse")
     parser.add_argument(
-        "--path_prefix",
+        "--s3_prefix",
         help="The path to crawl through where objects need to be tagged",
     )  # add slash
+
     args = parser.parse_args()
+    s3_prefix = args.s3_prefix
+    if s3_prefix.startswith("/"):
+        s3_prefix = s3_prefix.lstrip("/")
+    if s3_prefix.endswith("/"):
+        s3_prefix = s3_prefix.rstrip("/")
+
     logger = setup_logging(
         log_level=os.environ["S3_TAGGER_LOG_LEVEL"].upper()
         if "S3_TAGGER_LOG_LEVEL" in os.environ
         else "INFO",
-        log_path="${log_path}",  # ${log_path}
+        log_path="test-log.log",  # ${log_path}
     )
     s3 = get_s3()
-    objects_in_prefix = get_objects_in_prefix("s3bucket", args.path_prefix, s3)
-    tag_path(objects_in_prefix, s3, "s3bucket")
+    csv_data = read_csv(args.csv_location, s3)
+    objects_in_prefix = get_objects_in_prefix(
+        "${PUBLISH_BUCKET}", s3_prefix, s3
+    )
+    tag_path(objects_in_prefix, s3, ${PUBLISH_BUCKET}")

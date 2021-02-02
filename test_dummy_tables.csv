@@ -1,10 +1,5 @@
 db,table,pii
-uc_pdm_model.db,xxxx,true
-a,yyyy,false
-a,zzzz,
-b,xxxx,false
-b,ffff,
-uc,to_do_type_dim_v,true
-
-
-
+a,aaaa,true
+a,bbbb,false
+d,aaaa,false
+f,zzzz,
