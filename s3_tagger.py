@@ -27,19 +27,25 @@ def read_csv(csv_location, s3_client):
     csv_dict = {}
 
     bucket = (re.search("s3://([a-zA-Z0-9-]*)", csv_location)).group(1)
-    key = ((re.search("s3://[a-zA-Z0-9-]*(.*)",csv_location)).group(1)).lstrip("/")
-    file_name = csv_location.split('/')[-1]
+    key = ((re.search("s3://[a-zA-Z0-9-]*(.*)", csv_location)).group(1)).lstrip("/")
+    file_name = csv_location.split("/")[-1]
 
-    s3_client.download_file(bucket, key, file_name)
+    try:
+        s3_client.download_file(bucket, key, file_name)
 
-    with open(file_name) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row["db"] in csv_dict:
-                csv_dict[row["db"]].append({"table": row["table"], "pii": row["pii"]})
-            else:
-                csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
-    return csv_dict
+        with open(file_name) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["db"] in csv_dict:
+                    csv_dict[row["db"]].append(
+                        {"table": row["table"], "pii": row["pii"]}
+                    )
+                else:
+                    csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
+        return csv_dict
+    except Exception as ex:
+        logger.error(ex)
+        sys.exit(-1)
 
 
 def tag_object(key, s3_client, s3_bucket):
@@ -130,7 +136,5 @@ if __name__ == "__main__":
     )
     s3 = get_s3()
     csv_data = read_csv(args.csv_location, s3)
-    objects_in_prefix = get_objects_in_prefix(
-        "${PUBLISH_BUCKET}", s3_prefix, s3
-    )
-    tag_path(objects_in_prefix, s3, ${PUBLISH_BUCKET}")
+    objects_in_prefix = get_objects_in_prefix("adaadd-dsfds4", s3_prefix, s3)
+    tag_path(objects_in_prefix, s3, "1234-2vgveg")
