@@ -14,6 +14,7 @@ CSV_LOCATION = "s3://tab-info-bucket/table/info/path/table_info.csv"
 S3_PREFIX = "data/db1"
 BUCKET_TO_TAG = "buckettotag"
 
+
 @pytest.fixture(scope="session")
 def csv_data(pytestconfig):
     csv_data = {
@@ -34,6 +35,7 @@ def objects_in_prefix(pytestconfig):
 def objects_to_tag(pytestconfig):
     objects_to_tag = ["data/db1/tab1/00000_0", "data/db2/tab2/00000_0"]
     return objects_to_tag
+
 
 @mock_s3
 def test_read_csv():
