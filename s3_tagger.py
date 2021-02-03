@@ -1,10 +1,11 @@
 import argparse
-import re
 import csv
-import boto3
 import logging
 import os
+import re
 import sys
+
+import boto3
 
 
 def setup_logging(log_level):

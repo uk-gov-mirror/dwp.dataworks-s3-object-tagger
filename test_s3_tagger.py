@@ -1,8 +1,10 @@
-import s3_tagger
-from moto import mock_s3
+import warnings
+
 import boto3
 import pytest
-import warnings
+from moto import mock_s3
+
+import s3_tagger
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
