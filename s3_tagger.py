@@ -29,9 +29,14 @@ def read_csv(csv_location, s3_client):
     key = ((re.search("s3://[a-zA-Z0-9-]*(.*)", csv_location)).group(1)).lstrip("/")
     file_name = csv_location.split("/")[-1]
 
-    try:
-        s3_client.download_file(bucket, key, file_name)
+    logger.info(f"Downloading CSV from Bucket: {bucket}, Key: {key}, as {file_name}")
 
+    try:
+    
+        s3_client.download_file(bucket, key, file_name)
+        logger.info(f"CSV downloaded successfully as {file_name}")
+
+        logger.info("Attempting to read CSV into dictionary")
         with open(file_name) as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -41,6 +46,7 @@ def read_csv(csv_location, s3_client):
                     )
                 else:
                     csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
+        logger.info("CSV read successfully")
         return csv_dict
     except Exception as ex:
         logger.error(ex)
@@ -88,9 +94,12 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
 
 def get_s3():
-    s3_client = boto3.client("s3")
-    return s3_client
-
+    try:
+        s3_client = boto3.client("s3")
+        return s3_client
+    except Exception as ex:
+        logger.error("Failed to create an S3 client.", ex)
+        sys.exit(-1)
 
 def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     if s3_prefix.startswith("/"):
@@ -98,6 +107,7 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     if s3_prefix.endswith("/"):
         s3_prefix = s3_prefix.rstrip("/")
 
+    logger.info(f"Getting list of objects in {s3_prefix}")
     objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
         "Contents"
     ]
@@ -105,6 +115,7 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     for key in objects_in_prefix:
         if "$folder$" not in key["Key"]:
             objects_to_tag.append(key["Key"])
+ 
     return objects_to_tag
 
 
@@ -170,8 +181,11 @@ def get_parameters():
 
 
 if __name__ == "__main__":
+    logger.info("Starting tagging script...")
     args = get_parameters()
     logger = setup_logging(log_level=args.log_level.upper())
+
+    logger.info("args initiated")
 
     # remove tailing or leading / from prefix
     s3_prefix = args.s3_prefix
@@ -179,6 +193,8 @@ if __name__ == "__main__":
     logger.info("Instantiating s3 client")
     s3 = get_s3()
     logger.info("s3 client instantiated")
+
     csv_data = read_csv(args.csv_location, s3)
     objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
     tag_path(objects_to_tag, s3, args.bucket, csv_data)
+    logger.info("--Finished--")
