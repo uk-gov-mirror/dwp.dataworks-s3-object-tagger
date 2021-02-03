@@ -7,5 +7,5 @@ RUN  pip install -r requirements.txt
 
 COPY s3_tagger.py ./
 
-# CMD ["python", "s3_tagger.py"]
+ENTRYPOINT ["python", "s3_tagger.py"]
 

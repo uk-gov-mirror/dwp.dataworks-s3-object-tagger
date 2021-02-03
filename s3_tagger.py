@@ -7,15 +7,10 @@ import os
 import sys
 
 
-def setup_logging(log_level, log_path):
+def setup_logging(log_level):
     app_logger = logging.getLogger("s3_tagger")
     formatter = "{ 'timestamp': '%(asctime)s', 'name': '%(name)s', 'log_level': '%(levelname)s', 'message': '%(message)s' }"
-    for old_handler in app_logger.handlers:
-        app_logger.removeHandler(old_handler)
-    if log_path is None:
-        handler = logging.StreamHandler(sys.stdout)
-    else:
-        handler = logging.FileHandler(log_path)
+    handler = logging.StreamHandler(sys.stdout)
     new_level = logging.getLevelName(log_level.upper())
     handler.setFormatter(logging.Formatter(formatter))
     app_logger.addHandler(handler)
@@ -26,8 +21,7 @@ def setup_logging(log_level, log_path):
 logger = setup_logging(
     log_level=os.environ["S3_TAGGER_LOG_LEVEL"].upper()
     if "S3_TAGGER_LOG_LEVEL" in os.environ
-    else "INFO",
-    log_path="test-log.log",  # ${log_path}
+    else "INFO"
 )
 
 
@@ -71,7 +65,10 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
                 tag_info_found = True
 
     if type(pii_value) != str:
-        pii_value = " "
+        pii_value = ""
+    
+    if pii_value == "":
+        logger.warning(f"{table_name} from {db_name} does not have a PII classification")
 
     s3_client.put_object_tagging(
         Bucket=s3_bucket,
@@ -120,16 +117,56 @@ def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
     else:
         logger.info(f"{tagged_objects} objects were tagged")
 
+def get_parameters():
+    parser = argparse.ArgumentParser(
+    description="A Python script which receives three args. 1. CSV location. 2. S3 Bucket. 3. S3-prefix, "
+    "It will then tag all the objects in the prefix as described in the CSV supplied"
+)
+
+    # Parse command line inputs and set defaults
+    parser.add_argument("--csv_location", help="The location of the CSV file to parse")
+    parser.add_argument("--bucket", help="The bucket to tag")
+    parser.add_argument("--s3_prefix", help="The path to crawl through where objects need to be tagged")  
+    parser.add_argument("--log-level", default="INFO")
+    
+
+
+    _args = parser.parse_args()
+
+    # Override arguments with environment variables where set
+    if "csv_location" in os.environ:
+        _args.aws_profile = os.environ["csv_location"]
+
+    if "bucket" in os.environ:
+        _args.aws_region = os.environ["bucket"]
+
+    if "s3_prefix" in os.environ:
+        _args.api_region = os.environ["s3_prefix"]
+
+    if "log_level" in os.environ:
+        _args.v1_kms_region = os.environ["log_level"]
+
+    required_args = ["csv_location", "bucket", "s3_prefix"]
+    missing_args = []
+
+    for required_message_key in required_args:
+        if required_message_key not in _args:
+            missing_args.append(required_message_key)
+
+    if missing_args:
+        raise argparse.ArgumentError(
+            None,
+            "ArgumentError: The following required arguments are missing: {}".format(
+                ", ".join(missing_args)
+            ),
+        )
+    
+    return _args
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Take locations as args")
-    parser.add_argument("--csv_location", help="The location of the CSV file to parse")
-    parser.add_argument(
-        "--s3_prefix",
-        help="The path to crawl through where objects need to be tagged",
-    )  # add slash
+    args = get_parameters()
 
-    args = parser.parse_args()
+    #remove tailing or leading / from prefix 
     s3_prefix = args.s3_prefix
     if s3_prefix.startswith("/"):
         s3_prefix = s3_prefix.lstrip("/")
@@ -138,5 +175,5 @@ if __name__ == "__main__":
 
     s3 = get_s3()
     csv_data = read_csv(args.csv_location, s3)
-    objects_to_tag = get_objects_in_prefix("adaadd-dsfds4", s3_prefix, s3)
-    tag_path(objects_to_tag, s3, "1234-2vgveg", csv_data)
+    objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
+    tag_path(objects_to_tag, s3, args.bucket, csv_data)
