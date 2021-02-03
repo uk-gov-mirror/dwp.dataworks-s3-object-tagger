@@ -6,9 +6,10 @@ from unittest import mock
 import boto3
 import pytest
 from moto import mock_s3
-import pytestmock 
+import pytestmock
 
 from s3_tagger import *
+
 # import s3_tagger
 
 with warnings.catch_warnings():
