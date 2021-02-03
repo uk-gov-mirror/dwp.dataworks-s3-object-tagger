@@ -20,7 +20,7 @@ This application takes four positional arguments.
 
 4. `--log-level` Optional argument. Default is `INFO`
 
-The application is deployed to dockerhub, after which it is mirrored to AWS ECR.
+The application is deployed to [DockerHub](https://hub.docker.com/repository/docker/dwpdigital/dataworks-s3-object-tagger), after which it is mirrored to AWS ECR.
 
 After cloning this repo, please run:  
 `make bootstrap`

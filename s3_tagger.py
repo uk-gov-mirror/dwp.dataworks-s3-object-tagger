@@ -56,7 +56,7 @@ def read_csv(csv_location, s3_client):
     logger.info(f'Downloading CSV",  "Bucket": "{bucket}", "Key": "{key}", "file_name": "{file_name}')
 
     try:
-    
+
         s3_client.download_file(bucket, key, file_name)
         logger.info(f'Successfully "file_name": "{file_name}')
 
@@ -125,6 +125,7 @@ def get_s3():
         logger.error("Failed to create an S3 client.", ex)
         sys.exit(-1)
 
+
 def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     if s3_prefix.startswith("/"):
         s3_prefix = s3_prefix.lstrip("/")
@@ -139,7 +140,7 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     for key in objects_in_prefix:
         if "$folder$" not in key["Key"]:
             objects_to_tag.append(key["Key"])
- 
+
     return objects_to_tag
 
 
