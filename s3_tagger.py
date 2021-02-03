@@ -93,6 +93,11 @@ def get_s3():
 
 
 def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
+    if s3_prefix.startswith("/"):
+        s3_prefix = s3_prefix.lstrip("/")
+    if s3_prefix.endswith("/"):
+        s3_prefix = s3_prefix.rstrip("/")
+
     objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
         "Contents"
     ]
@@ -166,18 +171,14 @@ def get_parameters():
 
 if __name__ == "__main__":
     args = get_parameters()
+    logger = setup_logging(log_level=args.log_level.upper())
 
     # remove tailing or leading / from prefix
     s3_prefix = args.s3_prefix
-    if s3_prefix.startswith("/"):
-        s3_prefix = s3_prefix.lstrip("/")
-    if s3_prefix.endswith("/"):
-        s3_prefix = s3_prefix.rstrip("/")
 
+    logger.info("Instantiating s3 client")
     s3 = get_s3()
-
-    logger = setup_logging(log_level=args.log_level.upper())
-
+    logger.info("s3 client instantiated")
     csv_data = read_csv(args.csv_location, s3)
     objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
     tag_path(objects_to_tag, s3, args.bucket, csv_data)
