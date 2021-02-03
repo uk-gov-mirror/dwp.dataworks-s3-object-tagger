@@ -11,6 +11,7 @@ This application takes four positional arguments.
     |db1|tab1 |false|
     |db2|tab2 |true |
     |db3|tab3 |     |
+    
     The application will check the contents of a table that follows the above structure to correctly tag S3 objects(tables).
 
 2. `--bucket` This is the bucket where the dataset resides that requires tagging
