@@ -26,8 +26,8 @@ jobs:
       - name: Install Tox
         run: pip install tox
 
-      - name: Install pytest
-        run: pip install pytest
+      - name: Install requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run black --check .
         id: check-formatting
