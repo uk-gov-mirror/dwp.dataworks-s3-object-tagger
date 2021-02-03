@@ -66,9 +66,11 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
     if type(pii_value) != str:
         pii_value = ""
-    
+
     if pii_value == "":
-        logger.warning(f"{table_name} from {db_name} does not have a PII classification")
+        logger.warning(
+            f"{table_name} from {db_name} does not have a PII classification"
+        )
 
     s3_client.put_object_tagging(
         Bucket=s3_bucket,
@@ -117,19 +119,20 @@ def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
     else:
         logger.info(f"{tagged_objects} objects were tagged")
 
+
 def get_parameters():
     parser = argparse.ArgumentParser(
-    description="A Python script which receives three args. 1. CSV location. 2. S3 Bucket. 3. S3-prefix, "
-    "It will then tag all the objects in the prefix as described in the CSV supplied"
-)
+        description="A Python script which receives three args. 1. CSV location. 2. S3 Bucket. 3. S3-prefix, "
+        "It will then tag all the objects in the prefix as described in the CSV supplied"
+    )
 
     # Parse command line inputs and set defaults
     parser.add_argument("--csv_location", help="The location of the CSV file to parse")
     parser.add_argument("--bucket", help="The bucket to tag")
-    parser.add_argument("--s3_prefix", help="The path to crawl through where objects need to be tagged")  
+    parser.add_argument(
+        "--s3_prefix", help="The path to crawl through where objects need to be tagged"
+    )
     parser.add_argument("--log-level", default="INFO")
-    
-
 
     _args = parser.parse_args()
 
@@ -160,13 +163,14 @@ def get_parameters():
                 ", ".join(missing_args)
             ),
         )
-    
+
     return _args
+
 
 if __name__ == "__main__":
     args = get_parameters()
 
-    #remove tailing or leading / from prefix 
+    # remove tailing or leading / from prefix
     s3_prefix = args.s3_prefix
     if s3_prefix.startswith("/"):
         s3_prefix = s3_prefix.lstrip("/")
