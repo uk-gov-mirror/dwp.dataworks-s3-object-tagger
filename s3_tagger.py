@@ -19,9 +19,7 @@ def setup_logging(log_level):
 
 
 logger = setup_logging(
-    log_level=os.environ["S3_TAGGER_LOG_LEVEL"].upper()
-    if "S3_TAGGER_LOG_LEVEL" in os.environ
-    else "INFO"
+    log_level=os.environ[args.log_level].upper()
 )
 
 
@@ -138,16 +136,16 @@ def get_parameters():
 
     # Override arguments with environment variables where set
     if "csv_location" in os.environ:
-        _args.aws_profile = os.environ["csv_location"]
+        _args.csv_location = os.environ["csv_location"]
 
     if "bucket" in os.environ:
-        _args.aws_region = os.environ["bucket"]
+        _args.bucket = os.environ["bucket"]
 
     if "s3_prefix" in os.environ:
-        _args.api_region = os.environ["s3_prefix"]
+        _args.s3_prefix = os.environ["s3_prefix"]
 
     if "log_level" in os.environ:
-        _args.v1_kms_region = os.environ["log_level"]
+        _args.log_level = os.environ["log_level"]
 
     required_args = ["csv_location", "bucket", "s3_prefix"]
     missing_args = []
