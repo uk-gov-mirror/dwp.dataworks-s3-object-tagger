@@ -19,6 +19,7 @@ import boto3
 #     app_logger.setLevel(new_level)
 #     return app_logger
 
+
 def setup_logging(logger_level, application, environment):
     the_logger = logging.getLogger()
     for old_handler in the_logger.handlers:
@@ -46,6 +47,7 @@ def setup_logging(logger_level, application, environment):
 
     return the_logger
 
+
 def read_csv(csv_location, s3_client):
     csv_dict = {}
 
@@ -53,7 +55,9 @@ def read_csv(csv_location, s3_client):
     key = ((re.search("s3://[a-zA-Z0-9-]*(.*)", csv_location)).group(1)).lstrip("/")
     file_name = csv_location.split("/")[-1]
 
-    logger.info(f'Downloading CSV",  "Bucket": "{bucket}", "Key": "{key}", "file_name": "{file_name}')
+    logger.info(
+        f'Downloading CSV",  "Bucket": "{bucket}", "Key": "{key}", "file_name": "{file_name}'
+    )
 
     try:
 
@@ -191,7 +195,7 @@ def get_parameters():
 
     if "environment" in os.environ:
         _args.log_level = os.environ["environment"]
-    
+
     if "application" in os.environ:
         _args.log_level = os.environ["application"]
 
@@ -213,11 +217,13 @@ def get_parameters():
     return _args
 
 
-
-
 def handler():
     args = get_parameters()
-    logger = setup_logging(logger_level=args.log_level.upper(), application=args.application, environment=args.environment)
+    logger = setup_logging(
+        logger_level=args.log_level.upper(),
+        application=args.application,
+        environment=args.environment,
+    )
     logger.info("args initiated")
 
     # remove tailing or leading / from prefix
@@ -232,7 +238,6 @@ def handler():
     objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
     tag_path(objects_to_tag, s3, args.bucket, csv_data)
     logger.info("--Finished--")
-
 
 
 if __name__ == "__main__":

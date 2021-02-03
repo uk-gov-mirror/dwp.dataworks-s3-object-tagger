@@ -2,9 +2,17 @@ import boto3
 import pytest
 import warnings
 from moto import mock_s3
+<<<<<<< HEAD
 from unittest.mock import patch
 
 from s3_tagger import *
+=======
+import pytestmock
+
+from s3_tagger import *
+
+# import s3_tagger
+>>>>>>> 723a300a78927ce6dfc7060562e408eb3937236b
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
