@@ -23,6 +23,14 @@ def setup_logging(log_level, log_path):
     return app_logger
 
 
+logger = setup_logging(
+    log_level=os.environ["S3_TAGGER_LOG_LEVEL"].upper()
+    if "S3_TAGGER_LOG_LEVEL" in os.environ
+    else "INFO",
+    log_path="test-log.log",  # ${log_path}
+)
+
+
 def read_csv(csv_location, s3_client):
     csv_dict = {}
 
@@ -48,7 +56,7 @@ def read_csv(csv_location, s3_client):
         sys.exit(-1)
 
 
-def tag_object(key, s3_client, s3_bucket):
+def tag_object(key, s3_client, s3_bucket, csv_data):
     split_string = key.split("/")
     objects_to_tag = split_string[-1]
     table_name = split_string[-2]
@@ -92,19 +100,19 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
         "Contents"
     ]
-    return objects_in_prefix
-
-
-def tag_path(objects_in_prefix, s3_client, s3_bucket):
     objects_to_tag = []
     for key in objects_in_prefix:
         if "$folder$" not in key["Key"]:
             objects_to_tag.append(key["Key"])
+    return objects_to_tag
+
+
+def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
 
     logger.info(f"Found {len(objects_to_tag)} objects to tag in specified path")
     tagged_objects = 0
     for row in objects_to_tag:
-        is_tagged = tag_object(row, s3_client, s3_bucket)
+        is_tagged = tag_object(row, s3_client, s3_bucket, csv_data)
         tagged_objects = tagged_objects + is_tagged
 
     if tagged_objects == 0:
@@ -128,13 +136,7 @@ if __name__ == "__main__":
     if s3_prefix.endswith("/"):
         s3_prefix = s3_prefix.rstrip("/")
 
-    logger = setup_logging(
-        log_level=os.environ["S3_TAGGER_LOG_LEVEL"].upper()
-        if "S3_TAGGER_LOG_LEVEL" in os.environ
-        else "INFO",
-        log_path="test-log.log",  # ${log_path}
-    )
     s3 = get_s3()
     csv_data = read_csv(args.csv_location, s3)
-    objects_in_prefix = get_objects_in_prefix("adaadd-dsfds4", s3_prefix, s3)
-    tag_path(objects_in_prefix, s3, "1234-2vgveg")
+    objects_to_tag = get_objects_in_prefix("adaadd-dsfds4", s3_prefix, s3)
+    tag_path(objects_to_tag, s3, "1234-2vgveg", csv_data)
