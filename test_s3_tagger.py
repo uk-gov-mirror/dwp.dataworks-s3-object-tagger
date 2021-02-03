@@ -1,3 +1,5 @@
+import logging 
+import sys
 import warnings
 
 import boto3
@@ -108,5 +110,5 @@ def test_tag_path(objects_to_tag, csv_data):
     response2 = s3_client.get_object_tagging(
         Bucket=BUCKET_TO_TAG, Key=objects_to_tag[0]
     )
-    assert response["TagSet"][2]["Value"] == "true", "incorrect pii value"
-    assert response2["TagSet"][2]["Value"] == "false", "incorrect pii value"
+    assert response["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
+    assert response2["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"

@@ -44,7 +44,8 @@ jobs:
           git push
 
       - name: unit-tests
-        run: pytest ./test_s3_tagger.py
+        run: make unit-tests
+
       - name: Build Docker image
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
 

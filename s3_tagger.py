@@ -17,10 +17,8 @@ def setup_logging(log_level):
     app_logger.addHandler(handler)
     app_logger.setLevel(new_level)
     return app_logger
-
-
-logger = setup_logging(log_level=os.environ[args.log_level].upper())
-
+    
+logger = setup_logging(log_level="INFO")
 
 def read_csv(csv_location, s3_client):
     csv_dict = {}
@@ -175,6 +173,9 @@ if __name__ == "__main__":
         s3_prefix = s3_prefix.rstrip("/")
 
     s3 = get_s3()
+
+    logger = setup_logging(log_level=args.log_level.upper())
+    
     csv_data = read_csv(args.csv_location, s3)
     objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
     tag_path(objects_to_tag, s3, args.bucket, csv_data)
