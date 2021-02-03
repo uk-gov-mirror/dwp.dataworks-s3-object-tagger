@@ -18,9 +18,7 @@ def setup_logging(log_level):
     return app_logger
 
 
-logger = setup_logging(
-    log_level=os.environ[args.log_level].upper()
-)
+logger = setup_logging(log_level=os.environ[args.log_level].upper())
 
 
 def read_csv(csv_location, s3_client):
