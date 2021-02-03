@@ -1,19 +1,13 @@
-import logging
-import sys
-import warnings
-from unittest import mock
-
 import boto3
 import pytest
+import warnings
 from moto import mock_s3
-import pytestmock 
+from unittest.mock import patch
 
 from s3_tagger import *
-# import s3_tagger
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import imp
 
 TABLE_INFO_BUCKET = "tab-info-bucket"
 CSV_LOCATION = "s3://tab-info-bucket/table/info/path/table_info.csv"
@@ -23,7 +17,7 @@ BUCKET_TO_TAG = "buckettotag"
 
 @mock_s3
 def test_read_csv(mocker):
-    with mocker.patch("logging.getLogger"):
+    with patch('logging.getLogger') as logger:
         s3_client = boto3.client("s3")
         s3_client.create_bucket(
             Bucket=TABLE_INFO_BUCKET,
