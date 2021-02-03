@@ -20,7 +20,7 @@ import boto3
 #     return app_logger
 
 
-def setup_logging(logger_level, application, environment):
+def setup_logging(logger_level):
     the_logger = logging.getLogger()
     for old_handler in the_logger.handlers:
         the_logger.removeHandler(old_handler)
@@ -31,7 +31,7 @@ def setup_logging(logger_level, application, environment):
 
     json_format = (
         '{ "timestamp": "%(asctime)s", "log_level": "%(levelname)s", "message": "%(message)s", '
-        f'"environment": "{environment}", "application": "{application}", '
+        f'"environment": "{args.environment}", "application": "{args.application}", '
         f'"module": "%(module)s", "process": "%(process)s", '
         f'"thread": "[%(thread)s]", "hostname": "{hostname}" }} '
     )
@@ -218,12 +218,6 @@ def get_parameters():
 
 
 def handler():
-    args = get_parameters()
-    logger = setup_logging(
-        logger_level=args.log_level.upper(),
-        application=args.application,
-        environment=args.environment,
-    )
     logger.info("args initiated")
 
     # remove tailing or leading / from prefix
@@ -241,5 +235,6 @@ def handler():
 
 
 if __name__ == "__main__":
-    # logger.info("Starting tagging script...")
+    args = get_parameters()
+    logger = setup_logging(args.log_level)
     handler()
