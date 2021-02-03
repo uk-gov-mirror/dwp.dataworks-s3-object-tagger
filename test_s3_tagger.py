@@ -1,12 +1,15 @@
 import logging
 import sys
 import warnings
+from unittest import mock
 
 import boto3
 import pytest
 from moto import mock_s3
+import pytestmock 
 
-import s3_tagger
+from s3_tagger import *
+# import s3_tagger
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -19,20 +22,21 @@ BUCKET_TO_TAG = "buckettotag"
 
 
 @mock_s3
-def test_read_csv():
-    s3_client = boto3.client("s3")
-    s3_client.create_bucket(
-        Bucket=TABLE_INFO_BUCKET,
-        CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
-    )
-    s3_client.upload_file(
-        "test_data.csv",
-        TABLE_INFO_BUCKET,
-        "table/info/path/table_info.csv",
-    )
-    output = s3_tagger.read_csv(CSV_LOCATION, s3_client)
-    assert type(output) == dict, "failed reading csv into dictionary"
-    assert output["db1"][0]["pii"] == "false", "incorrect dictionary structure"
+def test_read_csv(mocker):
+    with mocker.patch("logging.getLogger"):
+        s3_client = boto3.client("s3")
+        s3_client.create_bucket(
+            Bucket=TABLE_INFO_BUCKET,
+            CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+        )
+        s3_client.upload_file(
+            "test_data.csv",
+            TABLE_INFO_BUCKET,
+            "table/info/path/table_info.csv",
+        )
+        output = read_csv(CSV_LOCATION, s3_client)
+        assert type(output) == dict, "failed reading csv into dictionary"
+        assert output["db1"][0]["pii"] == "false", "incorrect dictionary structure"
 
 
 @pytest.fixture(scope="session")
@@ -68,7 +72,7 @@ def test_tag_object(csv_data):
     s3_client.put_object(
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/tab1/00000_0"
     )
-    s3_tagger.tag_object("data/db1/tab1/00000_0", s3_client, BUCKET_TO_TAG, csv_data)
+    tag_object("data/db1/tab1/00000_0", s3_client, BUCKET_TO_TAG, csv_data)
     response = s3_client.get_object_tagging(
         Bucket=BUCKET_TO_TAG, Key="data/db1/tab1/00000_0"
     )
@@ -88,7 +92,7 @@ def test_get_objects_in_prexif():
     s3_client.put_object(
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/$folder$"
     )
-    response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, S3_PREFIX, s3_client)
+    response = get_objects_in_prefix(BUCKET_TO_TAG, S3_PREFIX, s3_client)
     assert len(response) == 1, "invalid objects were not filtered out"
 
 
@@ -105,7 +109,7 @@ def test_tag_path(objects_to_tag, csv_data):
     s3_client.put_object(
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db2/tab2/00000_0"
     )
-    s3_tagger.tag_path(objects_to_tag, s3_client, BUCKET_TO_TAG, csv_data)
+    tag_path(objects_to_tag, s3_client, BUCKET_TO_TAG, csv_data)
     response = s3_client.get_object_tagging(Bucket=BUCKET_TO_TAG, Key=objects_to_tag[1])
     response2 = s3_client.get_object_tagging(
         Bucket=BUCKET_TO_TAG, Key=objects_to_tag[0]

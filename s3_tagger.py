@@ -3,24 +3,48 @@ import csv
 import logging
 import os
 import re
+import socket
 import sys
 
 import boto3
 
 
-def setup_logging(log_level):
-    app_logger = logging.getLogger("s3_tagger")
-    formatter = "{ 'timestamp': '%(asctime)s', 'name': '%(name)s', 'log_level': '%(levelname)s', 'message': '%(message)s' }"
-    handler = logging.StreamHandler(sys.stdout)
-    new_level = logging.getLevelName(log_level.upper())
-    handler.setFormatter(logging.Formatter(formatter))
-    app_logger.addHandler(handler)
-    app_logger.setLevel(new_level)
-    return app_logger
+# def setup_logging(log_level):
+#     app_logger = logging.getLogger("s3_tagger")
+#     formatter = "{ 'timestamp': '%(asctime)s', 'name': '%(name)s', 'log_level': '%(levelname)s', 'message': '%(message)s' }"
+#     handler = logging.StreamHandler(sys.stdout)
+#     new_level = logging.getLevelName(log_level.upper())
+#     handler.setFormatter(logging.Formatter(formatter))
+#     app_logger.addHandler(handler)
+#     app_logger.setLevel(new_level)
+#     return app_logger
 
+def setup_logging(logger_level, application, environment):
+    the_logger = logging.getLogger()
+    for old_handler in the_logger.handlers:
+        the_logger.removeHandler(old_handler)
 
-logger = setup_logging(log_level="INFO")
+    new_handler = logging.StreamHandler(sys.stdout)
 
+    hostname = socket.gethostname()
+
+    json_format = (
+        '{ "timestamp": "%(asctime)s", "log_level": "%(levelname)s", "message": "%(message)s", '
+        f'"environment": "{environment}", "application": "{application}", '
+        f'"module": "%(module)s", "process": "%(process)s", '
+        f'"thread": "[%(thread)s]", "hostname": "{hostname}" }} '
+    )
+
+    new_handler.setFormatter(logging.Formatter(json_format))
+    the_logger.addHandler(new_handler)
+    new_level = logging.getLevelName(logger_level.upper())
+    the_logger.setLevel(new_level)
+
+    if the_logger.isEnabledFor(logging.DEBUG):
+        boto3.set_stream_logger()
+        the_logger.debug(f'Using boto3", "version": "{boto3.__version__}')
+
+    return the_logger
 
 def read_csv(csv_location, s3_client):
     csv_dict = {}
@@ -29,12 +53,12 @@ def read_csv(csv_location, s3_client):
     key = ((re.search("s3://[a-zA-Z0-9-]*(.*)", csv_location)).group(1)).lstrip("/")
     file_name = csv_location.split("/")[-1]
 
-    logger.info(f"Downloading CSV from Bucket: {bucket}, Key: {key}, as {file_name}")
+    logger.info(f'Downloading CSV",  "Bucket": "{bucket}", "Key": "{key}", "file_name": "{file_name}')
 
     try:
     
         s3_client.download_file(bucket, key, file_name)
-        logger.info(f"CSV downloaded successfully as {file_name}")
+        logger.info(f'Successfully "file_name": "{file_name}')
 
         logger.info("Attempting to read CSV into dictionary")
         with open(file_name) as f:
@@ -146,6 +170,8 @@ def get_parameters():
         "--s3_prefix", help="The path to crawl through where objects need to be tagged"
     )
     parser.add_argument("--log-level", default="INFO")
+    parser.add_argument("--environment", default="NOT_SET")
+    parser.add_argument("--application", default="NOT_SET")
 
     _args = parser.parse_args()
 
@@ -161,6 +187,12 @@ def get_parameters():
 
     if "log_level" in os.environ:
         _args.log_level = os.environ["log_level"]
+
+    if "environment" in os.environ:
+        _args.log_level = os.environ["environment"]
+    
+    if "application" in os.environ:
+        _args.log_level = os.environ["application"]
 
     required_args = ["csv_location", "bucket", "s3_prefix"]
     missing_args = []
@@ -180,11 +212,11 @@ def get_parameters():
     return _args
 
 
-if __name__ == "__main__":
-    logger.info("Starting tagging script...")
-    args = get_parameters()
-    logger = setup_logging(log_level=args.log_level.upper())
 
+
+def handler():
+    args = get_parameters()
+    logger = setup_logging(logger_level=args.log_level.upper(), application=args.application, environment=args.environment)
     logger.info("args initiated")
 
     # remove tailing or leading / from prefix
@@ -194,7 +226,14 @@ if __name__ == "__main__":
     s3 = get_s3()
     logger.info("s3 client instantiated")
 
+    logger.info('Fetching and reading CSV file", "csv_location": f"{args.csv_location}')
     csv_data = read_csv(args.csv_location, s3)
     objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
     tag_path(objects_to_tag, s3, args.bucket, csv_data)
     logger.info("--Finished--")
+
+
+
+if __name__ == "__main__":
+    # logger.info("Starting tagging script...")
+    handler()
