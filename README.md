@@ -16,7 +16,7 @@ This application takes four positional arguments.
 
 2. `--bucket` This is the bucket where the dataset resides that requires tagging
 
-3. `--prefix` This is the S3 prefix(can be partial) that the application will crawl through to find objects(tables) to tag with the values from the CSV
+3. `--s3_prefix` This is the S3 prefix(can be partial) that the application will crawl through to find objects(tables) to tag with the values from the CSV
 
 4. `--log-level` Optional argument. Default is `INFO`
 
