@@ -1,6 +1,8 @@
 FROM python:3.8-alpine3.10
 
-workdir /usr/src/app
+WORKDIR /usr/src/app
+
+RUN apk --update --no-cache add gcc musl-dev libffi-dev openssl-dev
 
 COPY requirements.txt ./
 RUN  pip install -r requirements.txt
