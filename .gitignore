@@ -12,4 +12,3 @@ aviator_pipeline.yml
 **/__pycache__/
 *.pyc
 **/.venv/**
-test-log.log

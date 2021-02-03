@@ -128,8 +128,6 @@ def get_parameters():
     parser.add_argument("--bucket", help="The bucket to tag")
     parser.add_argument("--s3_prefix", help="The path to crawl through where objects need to be tagged")  
     parser.add_argument("--log-level", default="INFO")
-    
-
 
     _args = parser.parse_args()
 
