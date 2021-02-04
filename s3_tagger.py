@@ -83,7 +83,6 @@ def read_csv(csv_location, s3_client):
 
 def tag_object(key, s3_client, s3_bucket, csv_data):
     split_string = key.split("/")
-    objects_to_tag = split_string[-1]
     table_name = split_string[-2]
     db_name = split_string[-3]
     pii_value = ""
