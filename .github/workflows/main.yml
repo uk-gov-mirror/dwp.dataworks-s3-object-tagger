@@ -1,12 +1,16 @@
 name: Master
 
 on:
-  push:
-    branches:
-      - master
+  pull_request:
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
+      - 'ci/**'
+      - '**/*.md'
+#  push:
+#    branches:
+#      - master
+#    paths-ignore:
+#      - 'docs/**'
+#      - '*.md'
 
 env:
   IMAGE_NAME: dwpdigital/dataworks-s3-object-tagger
@@ -15,10 +19,10 @@ jobs:
   get-publish-version:
     runs-on: ubuntu-latest
     outputs:
-      publish-version: ${{ steps.get-semver-version.outputs.publish-version }}
+      publish-version: ${{ steps.get-publish-version.outputs.publish-version }}
     steps:
-      - name: Get semver version
-        id: get-semver-version
+      - name: Prepare SemVer
+        id: prepare-semver
         run: |
           LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${{ github.repository }}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
           [  -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
