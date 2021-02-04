@@ -63,8 +63,10 @@ def read_csv(csv_location, s3_client):
                     csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
         logger.info(f'Successfully read", "CSV": "{file_name}')
         return csv_dict
-    except Exception as ex:
-        logger.error(ex)
+    except Exception as err:
+        logger.error(
+            f'Failed to Download/Read", "CSV": "{file_name}", "error_message": "{err}'
+        )
         sys.exit(-1)
 
 
@@ -88,18 +90,21 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
         logger.warning(
             f'No PII classification found for", "table_name": "{table_name}", "db_name": "{db_name}'
         )
-
-    s3_client.put_object_tagging(
-        Bucket=s3_bucket,
-        Key=key,
-        Tagging={
-            "TagSet": [
-                {"Key": "db", "Value": db_name},
-                {"Key": "table", "Value": table_name},
-                {"Key": "pii", "Value": pii_value},
-            ]
-        },
-    )
+    try:
+        s3_client.put_object_tagging(
+            Bucket=s3_bucket,
+            Key=key,
+            Tagging={
+                "TagSet": [
+                    {"Key": "db", "Value": db_name},
+                    {"Key": "table", "Value": table_name},
+                    {"Key": "pii", "Value": pii_value},
+                ]
+            },
+        )
+        logger.info(f'Successfully tagged", "object": "{key}')
+    except Exception as err:
+        logger.error(f'Failed to tag", "object": "{key}", "error_message": "{err}')
 
     if tag_info_found:
         return 1
@@ -111,8 +116,8 @@ def get_s3():
     try:
         s3_client = boto3.client("s3")
         return s3_client
-    except Exception as ex:
-        logger.error("Failed to create an S3 client.", ex)
+    except Exception as err:
+        logger.error(f'Failed to create an S3 client", "error_message": "{err}')
         sys.exit(-1)
 
 
@@ -123,17 +128,23 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     if s3_prefix.endswith("/"):
         s3_prefix = s3_prefix.rstrip("/")
 
-    logger.info(f'Getting list of objects in", "s3_prefix": "{s3_prefix}')
-    objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
-        "Contents"
-    ]
-    objects_to_tag = []
-    # Filter out temp folders that do not hold any objects for tagging
-    for key in objects_in_prefix:
-        if "$folder$" not in key["Key"]:
-            objects_to_tag.append(key["Key"])
+    try:
+        logger.info(f'Getting list of objects in", "s3_prefix": "{s3_prefix}')
+        objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
+            "Contents"
+        ]
+        objects_to_tag = []
+        # Filter out temp folders that do not hold any objects for tagging
+        for key in objects_in_prefix:
+            if "$folder$" not in key["Key"]:
+                objects_to_tag.append(key["Key"])
 
-    return objects_to_tag
+        return objects_to_tag
+
+    except Exception as err:
+        logger.error(
+            f'Failed to list objects", "bucket": "{s3_bucket}", "s3_prefix": "{s3_prefix}", "error_message":"{err}'
+        )
 
 
 def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
@@ -226,9 +237,11 @@ if __name__ == "__main__":
             f'Fetching and reading CSV file", "csv_location": "{args.csv_location}'
         )
         csv_data = read_csv(args.csv_location, s3)
-        logger.info("Getting list of objects to tag")
+        logger.info(
+            f'Getting list of objects to tag in", "bucket": "{args.bucket}", "s3_prefix": "{args.s3_prefix}'
+        )
         objects_to_tag = get_objects_in_prefix(args.bucket, args.s3_prefix, s3)
-        logger.info("Beginning to tag objects")
+        logger.info(f'Beginning to tag objects", "bucket": "{args.bucket}')
         tag_path(objects_to_tag, s3, args.bucket, csv_data)
         logger.info("--Finished--")
     except Exception as err:
