@@ -41,6 +41,20 @@ The required environment variables. They are replaced with the parameters passed
 |environment| NOT_SET | The environment the app runs in. e.g. Development |
 |application| NOT_SET |The name of the application | 
 
+## Assumptions 
+
+There are some assumptions made about the structure of the S3 objects and the data in the CSV  
+
+1. S3 structure  
+
+    The structure of objects in the prefix are expected to look like this: `folder_name/db_name.db/table_name/<objects-to-tag>`  
+    `<objects-to-tag>` are one or more part files of `table_name` that make up the table. 
+    
+2. CSV database names
+
+    The output from the data products creates databases with a `.db` suffix. Therefore, the database names in the csv are expected to follow the same syntax.  
+    eg. `database_name.db`
+    
 
 The application is deployed to [DockerHub](https://hub.docker.com/repository/docker/dwpdigital/dataworks-s3-object-tagger), after which it is mirrored to AWS ECR.
 

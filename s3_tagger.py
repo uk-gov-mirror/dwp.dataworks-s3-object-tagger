@@ -9,17 +9,6 @@ import sys
 import boto3
 
 
-# def setup_logging(log_level):
-#     app_logger = logging.getLogger("s3_tagger")
-#     formatter = "{ 'timestamp': '%(asctime)s', 'name': '%(name)s', 'log_level': '%(levelname)s', 'message': '%(message)s' }"
-#     handler = logging.StreamHandler(sys.stdout)
-#     new_level = logging.getLevelName(log_level.upper())
-#     handler.setFormatter(logging.Formatter(formatter))
-#     app_logger.addHandler(handler)
-#     app_logger.setLevel(new_level)
-#     return app_logger
-
-
 def setup_logging(logger_level):
     the_logger = logging.getLogger()
     for old_handler in the_logger.handlers:
@@ -50,7 +39,6 @@ def setup_logging(logger_level):
 
 def read_csv(csv_location, s3_client):
     csv_dict = {}
-
     bucket = (re.search("s3://([a-zA-Z0-9-]*)", csv_location)).group(1)
     key = ((re.search("s3://[a-zA-Z0-9-]*(.*)", csv_location)).group(1)).lstrip("/")
     file_name = csv_location.split("/")[-1]
@@ -60,11 +48,10 @@ def read_csv(csv_location, s3_client):
     )
 
     try:
-
         s3_client.download_file(bucket, key, file_name)
-        logger.info(f'Successfully "file_name": "{file_name}')
+        logger.info(f'Successfully downloaded", "file_name": "{file_name}')
 
-        logger.info("Attempting to read CSV into dictionary")
+        logger.info(f'Attempting to read into dictionary", "CSV": "{file_name}')
         with open(file_name) as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -74,7 +61,7 @@ def read_csv(csv_location, s3_client):
                     )
                 else:
                     csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
-        logger.info("CSV read successfully")
+        logger.info(f'Successfully read", "CSV": "{file_name}')
         return csv_dict
     except Exception as ex:
         logger.error(ex)
@@ -99,7 +86,7 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
     if pii_value == "":
         logger.warning(
-            f"{table_name} from {db_name} does not have a PII classification"
+            f'No PII classification found for", "table_name": "{table_name}", "db_name": "{db_name}'
         )
 
     s3_client.put_object_tagging(
@@ -130,16 +117,18 @@ def get_s3():
 
 
 def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
+    # remove tailing or leading / from prefix
     if s3_prefix.startswith("/"):
         s3_prefix = s3_prefix.lstrip("/")
     if s3_prefix.endswith("/"):
         s3_prefix = s3_prefix.rstrip("/")
 
-    logger.info(f"Getting list of objects in {s3_prefix}")
+    logger.info(f'Getting list of objects in", "s3_prefix": "{s3_prefix}')
     objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
         "Contents"
     ]
     objects_to_tag = []
+    # Filter out temp folders that do not hold any objects for tagging
     for key in objects_in_prefix:
         if "$folder$" not in key["Key"]:
             objects_to_tag.append(key["Key"])
@@ -148,22 +137,29 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
 
 
 def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
-
-    logger.info(f"Found {len(objects_to_tag)} objects to tag in specified path")
-    tagged_objects = 0
+    logger.info(f'Found objects to tag", "number_of_objects": "{len(objects_to_tag)}')
+    tagged_objects_count = 0
     for row in objects_to_tag:
         is_tagged = tag_object(row, s3_client, s3_bucket, csv_data)
-        tagged_objects = tagged_objects + is_tagged
+        tagged_objects_count = tagged_objects_count + is_tagged
 
-    if tagged_objects == 0:
-        logger.warning("No objects tagged")
+    if tagged_objects_count == 0:
+        logger.info(
+            f'Did not tag any objects", "number_of_objects": "{len(tagged_objects_count)}'
+        )
     else:
-        logger.info(f"{tagged_objects} objects were tagged")
+        logger.info(f'Tagged", "objects_tagged_count": "{tagged_objects_count}')
 
 
 def get_parameters():
     parser = argparse.ArgumentParser(
-        description="A Python script which receives three args. 1. CSV location. 2. S3 Bucket. 3. S3-prefix, "
+        description="A Python script which receives six args:"
+        "1. csv_location"
+        "2. bucket"
+        "3. s3-prefix"
+        "4. log-level"
+        "5. environment"
+        "6. application"
         "It will then tag all the objects in the prefix as described in the CSV supplied"
     )
 
@@ -217,19 +213,21 @@ def get_parameters():
 
 
 if __name__ == "__main__":
-    args = get_parameters()
-    logger = setup_logging(args.log_level)
-    logger.info("args initiated")
+    try:
+        args = get_parameters()
+        logger = setup_logging(args.log_level)
+        logger.info("args initiated")
 
-    # remove tailing or leading / from prefix
-    s3_prefix = args.s3_prefix
+        logger.info("Instantiating S3 client")
+        s3 = get_s3()
+        logger.info("S3 client instantiated")
 
-    logger.info("Instantiating s3 client")
-    s3 = get_s3()
-    logger.info("s3 client instantiated")
-
-    logger.info('Fetching and reading CSV file", "csv_location": f"{args.csv_location}')
-    csv_data = read_csv(args.csv_location, s3)
-    objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
-    tag_path(objects_to_tag, s3, args.bucket, csv_data)
-    logger.info("--Finished--")
+        logger.info(
+            f'Fetching and reading CSV file", "csv_location": "{args.csv_location}'
+        )
+        csv_data = read_csv(args.csv_location, s3)
+        objects_to_tag = get_objects_in_prefix(args.bucket, args.s3_prefix, s3)
+        tag_path(objects_to_tag, s3, args.bucket, csv_data)
+        logger.info("--Finished--")
+    except Exception as err:
+        logger.error(f'Exception occurred for invocation", "error_message": "{err}')

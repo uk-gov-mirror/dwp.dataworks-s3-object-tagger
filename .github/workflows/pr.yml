@@ -26,7 +26,7 @@ jobs:
       - name: Install Tox
         run: pip install tox
 
-      - name: Install requirements.txt
+      - name: Install requirements_dev.txt
         run: pip install -r requirements_dev.txt
 
       - name: Run black --check .
