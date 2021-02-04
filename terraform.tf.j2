@@ -36,7 +36,7 @@ provider "aws" {
 
 locals {
   name        = "dataworks-s3-object-tagger"
-  environment = terraform.workspace == "default" ? "development" : terraform.workspace
+  environment = terraform.workspace == "default" ? "management-dev" : terraform.workspace
 
   account = {
     {%- for key, value in accounts.items() %}
