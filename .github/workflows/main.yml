@@ -37,8 +37,8 @@ jobs:
         with:
           semver-input: ${{ steps.prepare-semver.outputs.latest_version_out }}
           increment: ${{ steps.prepare-semver.outputs.semver_increment }}
-      - name: Get publish version
-        id: get-publish-version
+      - name: Get semver version
+        id: get-semver-version
         run: echo "::set-output name=publish-version::${{ steps.semver.outputs.semver }}"
 
   publish-github-release:
