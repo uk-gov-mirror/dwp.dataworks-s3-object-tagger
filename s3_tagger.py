@@ -216,6 +216,7 @@ def get_parameters():
 
     return _args
 
+
 if __name__ == "__main__":
     args = get_parameters()
     logger = setup_logging(args.log_level)
