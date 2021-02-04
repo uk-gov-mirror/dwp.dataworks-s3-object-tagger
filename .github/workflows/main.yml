@@ -19,7 +19,7 @@ jobs:
   get-publish-version:
     runs-on: ubuntu-latest
     outputs:
-      publish-version: ${{ steps.get-publish-version.outputs.publish-version }}
+      publish-version: ${{ steps.get-semver-version.outputs.publish-version }}
     steps:
       - name: Prepare SemVer
         id: prepare-semver
