@@ -34,7 +34,7 @@ The required environment variables. They are replaced with the parameters passed
 
 |Variable name|Example|Description|
 |---|:---:|---:|
-|csv_location| NOT_SET |The full path to the CSV |
+|csv_location| s3://bucket/example/csv_file.csv |The full path to the CSV |
 |bucket| NOT_SET |Bucket name |
 |s3_prefix| NOT_SET |Prefix to crawl |
 |log_level| INFO |The desired log level, INFO or DEBUG |
