@@ -226,7 +226,9 @@ if __name__ == "__main__":
             f'Fetching and reading CSV file", "csv_location": "{args.csv_location}'
         )
         csv_data = read_csv(args.csv_location, s3)
+        logger.info("Getting list of objects to tag")
         objects_to_tag = get_objects_in_prefix(args.bucket, args.s3_prefix, s3)
+        logger.info("Beginning to tag objects")
         tag_path(objects_to_tag, s3, args.bucket, csv_data)
         logger.info("--Finished--")
     except Exception as err:
