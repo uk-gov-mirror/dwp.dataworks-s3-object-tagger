@@ -216,8 +216,9 @@ def get_parameters():
 
     return _args
 
-
-def handler():
+if __name__ == "__main__":
+    args = get_parameters()
+    logger = setup_logging(args.log_level)
     logger.info("args initiated")
 
     # remove tailing or leading / from prefix
@@ -232,9 +233,3 @@ def handler():
     objects_to_tag = get_objects_in_prefix(args.bucket, s3_prefix, s3)
     tag_path(objects_to_tag, s3, args.bucket, csv_data)
     logger.info("--Finished--")
-
-
-if __name__ == "__main__":
-    args = get_parameters()
-    logger = setup_logging(args.log_level)
-    handler()
