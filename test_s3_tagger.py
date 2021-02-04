@@ -8,6 +8,7 @@ import s3_tagger
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import imp
 
 TABLE_INFO_BUCKET = "tab-info-bucket"
 CSV_LOCATION = "s3://tab-info-bucket/table/info/path/table_info.csv"
