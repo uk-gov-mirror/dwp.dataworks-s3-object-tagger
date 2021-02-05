@@ -1,6 +1,6 @@
 resources:
   - name: dwpdigital-dataworks-s3-object-tagger
-    type: registry-image-resource
+    type: concourse-registry-image-resource
     source:
       repository: dwpdigital/dataworks-s3-object-tagger
     check_every: 5m
@@ -28,6 +28,7 @@ jobs:
       - put: ecr-dwpdigital-dataworks-s3-object-tagger-dev
         params:
           image: "dwpdigital-dataworks-s3-object-tagger/image.tar"
+          additional_tags: "dwpdigital-dataworks-s3-object-tagger/tag"
         attempts: 3
 
   - name: mirror-dwpdigital-dataworks-s3-object-tagger
@@ -41,4 +42,5 @@ jobs:
       - put: ecr-dwpdigital-dataworks-s3-object-tagger
         params:
           image: "dwpdigital-dataworks-s3-object-tagger/image.tar"
+          additional_tags: "dwpdigital-dataworks-s3-object-tagger/tag"
         attempts: 3
