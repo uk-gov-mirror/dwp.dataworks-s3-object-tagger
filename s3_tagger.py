@@ -5,7 +5,6 @@ import os
 import re
 import socket
 import sys
-
 import boto3
 
 
@@ -44,14 +43,16 @@ def read_csv(csv_location, s3_client):
     file_name = csv_location.split("/")[-1]
 
     logger.info(
-        f'Downloading CSV",  "Bucket": "{bucket}", "Key": "{key}", "file_name": "{file_name}'
+        f'Downloading {file_name} CSV",  "csv_bucket": "{bucket}", "csv_key": "{key}", "csv_file_name": "{file_name}'
     )
 
     try:
         s3_client.download_file(bucket, key, file_name)
         logger.info(f'Successfully downloaded", "file_name": "{file_name}')
 
-        logger.info(f'Attempting to read into dictionary", "CSV": "{file_name}')
+        logger.info(
+            f'Attempting to read into dictionary", "csv_location": "{csv_location}", "csv_file_name": "{file_name}'
+        )
         with open(file_name) as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -61,11 +62,13 @@ def read_csv(csv_location, s3_client):
                     )
                 else:
                     csv_dict[row["db"]] = [{"table": row["table"], "pii": row["pii"]}]
-        logger.info(f'Successfully read", "CSV": "{file_name}')
+        logger.info(
+            f'Successfully read", "csv_location": "{csv_location}", "csv_file_name": "{file_name}'
+        )
         return csv_dict
     except Exception as err:
         logger.error(
-            f'Failed to Download/Read", "CSV": "{file_name}", "error_message": "{err}'
+            f'Failed to download or read", "csv_location": "{csv_location}", "csv_file_name": "{file_name}", "error_message": "{err}'
         )
         sys.exit(-1)
 
@@ -88,7 +91,7 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
     if pii_value == "":
         logger.warning(
-            f'No PII classification found for", "table_name": "{table_name}", "db_name": "{db_name}'
+            f'No PII classification found for {table_name} {db_name}", "table_name": "{table_name}", "db_name": "{db_name}'
         )
     try:
         s3_client.put_object_tagging(
@@ -129,7 +132,9 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         s3_prefix = s3_prefix.rstrip("/")
 
     try:
-        logger.info(f'Getting list of objects in", "s3_prefix": "{s3_prefix}')
+        logger.info(
+            f'Contacting S3 for a list of objects", "data_bucket": "{s3_bucket}", "data_s3_prefix": "{s3_prefix}'
+        )
         objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
             "Contents"
         ]
@@ -143,20 +148,22 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
 
     except Exception as err:
         logger.error(
-            f'Failed to list objects", "bucket": "{s3_bucket}", "s3_prefix": "{s3_prefix}", "error_message":"{err}'
+            f'Failed to list objects", "data_bucket": "{s3_bucket}", "data_s3_prefix": "{s3_prefix}", "error_message":"{err}'
         )
+        raise err
 
 
 def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
     logger.info(f'Found objects to tag", "number_of_objects": "{len(objects_to_tag)}')
     tagged_objects_count = 0
+
     for row in objects_to_tag:
         is_tagged = tag_object(row, s3_client, s3_bucket, csv_data)
         tagged_objects_count = tagged_objects_count + is_tagged
 
     if tagged_objects_count == 0:
         logger.info(
-            f'Did not tag any objects", "number_of_objects": "{len(tagged_objects_count)}'
+            f'Did not tag any objects", "number_of_objects": "{tagged_objects_count}'
         )
     else:
         logger.info(f'Tagged", "objects_tagged_count": "{tagged_objects_count}')
@@ -228,7 +235,11 @@ if __name__ == "__main__":
     try:
         args = get_parameters()
         logger = setup_logging(args.log_level)
-        logger.info("args initiated")
+
+        logger.info(
+            f'Args initiated", "csv_location": "{args.csv_location}", "data_bucket": "{args.data_bucket}", '
+            f'"data_s3_prefix": "{args.data_s3_prefix}'
+        )
 
         logger.info("Instantiating S3 client")
         s3 = get_s3()
@@ -238,14 +249,32 @@ if __name__ == "__main__":
             f'Fetching and reading CSV file", "csv_location": "{args.csv_location}'
         )
         csv_data = read_csv(args.csv_location, s3)
+
         logger.info(
-            f'Getting list of objects to tag in", "bucket": "{args.data_bucket}", "s3_prefix": "{args.data_s3_prefix}'
+            f'Getting list of objects to tag", "data_bucket": "{args.data_bucket}", '
+            f'"data_s3_prefix": "{args.data_s3_prefix}'
         )
         objects_to_tag = get_objects_in_prefix(
             args.data_bucket, args.data_s3_prefix, s3
         )
-        logger.info(f'Beginning to tag objects", "bucket": "{args.data_bucket}')
+
+        logger.info(
+            f'Beginning to tag objects", "data_bucket": "{args.data_bucket}", '
+            f'"csv_location": "{args.csv_location}'
+        )
+
+        logger.debug(
+            f'Verbose list of items found and will attempt to tag", "data_bucket": "{args.data_bucket}",'
+            f'"objects_to_tag": "{objects_to_tag}'
+        )
         tag_path(objects_to_tag, s3, args.data_bucket, csv_data)
-        logger.info("--Finished--")
+
+        logger.info(
+            f'Finished tagging objects", "data_bucket": "{args.data_bucket}, '
+            f'"data_s3_prefix": "{args.data_s3_prefix}"'
+            f'"csv_location": "{args.csv_location}'
+        )
+
     except Exception as err:
         logger.error(f'Exception occurred for invocation", "error_message": "{err}')
+        raise err
