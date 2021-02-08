@@ -166,8 +166,8 @@ def get_parameters():
     parser = argparse.ArgumentParser(
         description="A Python script which receives six args:"
         "1. csv_location"
-        "2. bucket"
-        "3. s3-prefix"
+        "2. data-bucket"
+        "3. data-s3-prefix"
         "4. log-level"
         "5. environment"
         "6. application"
@@ -175,10 +175,11 @@ def get_parameters():
     )
 
     # Parse command line inputs and set defaults
-    parser.add_argument("--csv_location", help="The location of the CSV file to parse")
-    parser.add_argument("--bucket", help="The bucket to tag")
+    parser.add_argument("--csv-location", help="The location of the CSV file to parse")
+    parser.add_argument("--data-bucket", help="The bucket to tag")
     parser.add_argument(
-        "--s3_prefix", help="The path to crawl through where objects need to be tagged"
+        "--data-s3-prefix",
+        help="The path to crawl through where objects need to be tagged",
     )
     parser.add_argument("--log-level", default="INFO")
     parser.add_argument("--environment", default="NOT_SET")
@@ -187,25 +188,25 @@ def get_parameters():
     _args = parser.parse_args()
 
     # Override arguments with environment variables where set
-    if "csv_location" in os.environ:
-        _args.csv_location = os.environ["csv_location"]
+    if "CSV_LOCATION" in os.environ:
+        _args.csv_location = os.environ["CSV_LOCATION"]
 
-    if "bucket" in os.environ:
-        _args.bucket = os.environ["bucket"]
+    if "DATA_BUCKET" in os.environ:
+        _args.data_bucket = os.environ["DATA_BUCKET"]
 
-    if "s3_prefix" in os.environ:
-        _args.s3_prefix = os.environ["s3_prefix"]
+    if "DATA_S3_PREFIX" in os.environ:
+        _args.data_s3_prefix = os.environ["DATA_S3_PREFIX"]
 
-    if "log_level" in os.environ:
-        _args.log_level = os.environ["log_level"]
+    if "LOG_LEVEL" in os.environ:
+        _args.log_level = os.environ["LOG_LEVEL"]
 
-    if "environment" in os.environ:
-        _args.log_level = os.environ["environment"]
+    if "ENVIRONMENT" in os.environ:
+        _args.environment = os.environ["ENVIRONMENT"]
 
-    if "application" in os.environ:
-        _args.log_level = os.environ["application"]
+    if "APPLICATION" in os.environ:
+        _args.application = os.environ["APPLICATION"]
 
-    required_args = ["csv_location", "bucket", "s3_prefix"]
+    required_args = ["csv_location", "data_bucket", "data_s3_prefix"]
     missing_args = []
 
     for required_message_key in required_args:
@@ -238,11 +239,13 @@ if __name__ == "__main__":
         )
         csv_data = read_csv(args.csv_location, s3)
         logger.info(
-            f'Getting list of objects to tag in", "bucket": "{args.bucket}", "s3_prefix": "{args.s3_prefix}'
+            f'Getting list of objects to tag in", "bucket": "{args.data_bucket}", "s3_prefix": "{args.data_s3_prefix}'
         )
-        objects_to_tag = get_objects_in_prefix(args.bucket, args.s3_prefix, s3)
-        logger.info(f'Beginning to tag objects", "bucket": "{args.bucket}')
-        tag_path(objects_to_tag, s3, args.bucket, csv_data)
+        objects_to_tag = get_objects_in_prefix(
+            args.data_bucket, args.data_s3_prefix, s3
+        )
+        logger.info(f'Beginning to tag objects", "bucket": "{args.data_bucket}')
+        tag_path(objects_to_tag, s3, args.data_bucket, csv_data)
         logger.info("--Finished--")
     except Exception as err:
         logger.error(f'Exception occurred for invocation", "error_message": "{err}')

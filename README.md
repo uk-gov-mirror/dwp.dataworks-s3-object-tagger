@@ -4,7 +4,7 @@
 
 This application takes four positional arguments.
 
-1. `--csv_location` This is the full path to the CSV that will be used as a lookup table for the application.
+1. `--csv-location` This is the full path to the CSV that will be used as a lookup table for the application.
 
     |db |table|pii  |
     |---|-----|-----|
@@ -14,9 +14,9 @@ This application takes four positional arguments.
     
     The application will check the contents of a table that follows the above structure to correctly tag S3 objects(tables).
 
-2. `--bucket` This is the bucket name where the dataset resides that requires tagging
+2. `--data-bucket` This is the bucket name where the dataset resides that requires tagging
 
-3. `--s3_prefix` This is the S3 prefix(can be partial) that the application will crawl through to find objects(tables) to tag with the values from the CSV.  
+3. `--data-s3-prefix` This is the S3 prefix(can be partial) that the application will crawl through to find objects(tables) to tag with the values from the CSV.  
    
     Example: `Data_product_output/2021-01-28/`. The application will crawl through any objects it finds in that prefix.  
 
@@ -35,8 +35,8 @@ The required environment variables. They are replaced with the parameters passed
 |Variable name|Example|Description|
 |---|:---:|---:|
 |csv_location| s3://bucket/example/csv_file.csv |The full path to the CSV |
-|bucket| NOT_SET |Bucket name |
-|s3_prefix| NOT_SET |Prefix to crawl |
+|data_bucket| NOT_SET |Bucket name |
+|data_s3_prefix| NOT_SET |Prefix to crawl |
 |log_level| INFO |The desired log level, INFO or DEBUG |
 |environment| NOT_SET | The environment the app runs in. e.g. Development |
 |application| NOT_SET |The name of the application | 

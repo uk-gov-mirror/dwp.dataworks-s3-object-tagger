@@ -12,7 +12,7 @@ with warnings.catch_warnings():
 
 TABLE_INFO_BUCKET = "tab-info-bucket"
 CSV_LOCATION = "s3://tab-info-bucket/table/info/path/table_info.csv"
-S3_PREFIX = "data/db1"
+DATA_S3_PREFIX = "data/db1"
 BUCKET_TO_TAG = "buckettotag"
 
 
@@ -88,7 +88,7 @@ def test_get_objects_in_prexif():
     s3_client.put_object(
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/$folder$"
     )
-    response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, S3_PREFIX, s3_client)
+    response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, DATA_S3_PREFIX, s3_client)
     assert len(response) == 1, "invalid objects were not filtered out"
 
 
