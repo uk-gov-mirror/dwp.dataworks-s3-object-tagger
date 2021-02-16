@@ -52,8 +52,7 @@ There are some assumptions made about the structure of the S3 objects and the da
     
 2. CSV database names
 
-    The output from the data products creates databases with a `.db` suffix. Therefore, the database names in the csv are expected to follow the same syntax.  
-    eg. `database_name.db`
+    The output from the data products creates databases with a `.db` suffix. When the object tagger runs, it will tag the S3 objects without the `.db` suffix. The lookup CSV is expected to NOT have `.db` suffix in its database names. 
     
 
 The application is deployed to [DockerHub](https://hub.docker.com/repository/docker/dwpdigital/dataworks-s3-object-tagger), after which it is mirrored to AWS ECR.
