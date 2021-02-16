@@ -77,6 +77,8 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
     split_string = key.split("/")
     table_name = split_string[-2]
     db_name = split_string[-3]
+    if db_name.endswith(".db"):
+        db_name = db_name.replace(".db", "")
     pii_value = ""
     tag_info_found = None
 
