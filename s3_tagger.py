@@ -7,6 +7,8 @@ import socket
 import sys
 import boto3
 
+NAME_KEY = "Key"
+
 
 def setup_logging(logger_level):
     the_logger = logging.getLogger()
@@ -138,24 +140,38 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         logger.info(
             f'Contacting S3 for a list of objects", "data_bucket": "{s3_bucket}", "data_s3_prefix": "{s3_prefix}'
         )
-        objects_in_prefix = s3_client.list_objects_v2(
-            Bucket=s3_bucket, Prefix=s3_prefix
-        )["Contents"]
-        objects_to_tag = []
-        # Filter out temp folders that do not hold any objects for tagging
-        logger.info('Number of "objects_returned": "{len(objects_in_prefix)}')
-        for key in objects_in_prefix:
-            if "$folder$" not in key["Key"]:
-                objects_to_tag.append(key["Key"])
-        logger.info('Number of "objects_filtered": "{len(objects_in_prefix)}')
 
-        return objects_to_tag
+        objects_in_prefix = []
+        paginator = s3_client.get_paginator("list_objects_v2")
+
+        page_iterator = paginator.paginate(Bucket=s3_bucket, Prefix=s3_prefix)
+
+        for page in page_iterator:
+            objects_in_prefix.extend(page["Contents"])
+
+        logger.info('Number of "objects_returned": "{len(objects_in_prefix)}')
+
+        return filter_temp_files(objects_in_prefix)
 
     except Exception as err:
         logger.error(
             f'Failed to list objects", "data_bucket": "{s3_bucket}", "data_s3_prefix": "{s3_prefix}", "error_message":"{err}'
         )
         raise err
+
+
+def filter_temp_files(objects_in_prefix):
+    """
+    Filter out temp folders that do not hold any objects for tagging
+    :param objects_in_prefix: list of all objects in the prefix
+    :return: list of objects without temp files
+    """
+    objects_to_tag = []
+    for object in objects_in_prefix:
+        if "$folder$" not in object[NAME_KEY]:
+            objects_to_tag.append(object[NAME_KEY])
+    logger.info('Number of after filter "objects_filtered": "{len(objects_in_prefix)}')
+    return objects_to_tag
 
 
 def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):

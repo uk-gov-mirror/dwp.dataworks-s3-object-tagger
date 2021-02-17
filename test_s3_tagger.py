@@ -1,19 +1,25 @@
+import warnings
+from unittest import mock
+
 import boto3
 import pytest
-import warnings
 from moto import mock_s3
-from unittest import mock
 
 import s3_tagger
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import imp
 
 TABLE_INFO_BUCKET = "tab-info-bucket"
 CSV_LOCATION = "s3://tab-info-bucket/table/info/path/table_info.csv"
 DATA_S3_PREFIX = "data/db1"
 BUCKET_TO_TAG = "buckettotag"
+
+
+@pytest.fixture(scope="session")
+def s3_objects_with_temp_files(pytestconfig):
+    objects_in_prefix = [{"Key": "data/db1/$folder$"}, {"Key": "data/db1/00000_0"}]
+    return objects_in_prefix
 
 
 @pytest.fixture(scope="session")
@@ -113,3 +119,9 @@ def test_tag_path(objects_to_tag, csv_data):
     )
     assert response["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
     assert response2["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
+
+
+def test_filter_temp_files(s3_objects_with_temp_files):
+    s3_tagger.logger = mock.MagicMock()
+    response = s3_tagger.filter_temp_files(s3_objects_with_temp_files)
+    assert len(response) == 1, "invalid objects were not filtered out"
