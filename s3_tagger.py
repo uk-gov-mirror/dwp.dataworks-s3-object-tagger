@@ -149,7 +149,7 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         for page in page_iterator:
             objects_in_prefix.extend(page["Contents"])
 
-        logger.info('Number of "objects_returned": "{len(objects_in_prefix)}')
+        logger.info(f'Number of "objects_returned": "{len(objects_in_prefix)}')
 
         return filter_temp_files(objects_in_prefix)
 
@@ -170,7 +170,7 @@ def filter_temp_files(objects_in_prefix):
     for object in objects_in_prefix:
         if "$folder$" not in object[NAME_KEY]:
             objects_to_tag.append(object[NAME_KEY])
-    logger.info('Number of after filter "objects_filtered": "{len(objects_in_prefix)}')
+    logger.info(f'Number of after filter "objects_filtered": "{len(objects_in_prefix)}')
     return objects_to_tag
 
 
