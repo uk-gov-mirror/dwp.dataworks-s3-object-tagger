@@ -65,6 +65,7 @@ def read_csv(csv_location, s3_client):
         logger.info(
             f'Successfully read", "csv_location": "{csv_location}", "csv_file_name": "{file_name}'
         )
+        logger.info(f'CSV read into dictionary as", "csv_dict": "{csv_dict}')
         return csv_dict
     except Exception as err:
         logger.error(
@@ -137,14 +138,16 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         logger.info(
             f'Contacting S3 for a list of objects", "data_bucket": "{s3_bucket}", "data_s3_prefix": "{s3_prefix}'
         )
-        objects_in_prefix = s3_client.list_objects(Bucket=s3_bucket, Prefix=s3_prefix)[
-            "Contents"
-        ]
+        objects_in_prefix = s3_client.list_objects_v2(
+            Bucket=s3_bucket, Prefix=s3_prefix
+        )["Contents"]
         objects_to_tag = []
         # Filter out temp folders that do not hold any objects for tagging
+        logger.info('Number of "objects_returned": "{len(objects_in_prefix)}')
         for key in objects_in_prefix:
             if "$folder$" not in key["Key"]:
                 objects_to_tag.append(key["Key"])
+        logger.info('Number of "objects_filtered": "{len(objects_in_prefix)}')
 
         return objects_to_tag
 
