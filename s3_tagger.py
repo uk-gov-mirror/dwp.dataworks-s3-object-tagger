@@ -83,21 +83,35 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
     if db_name.endswith(".db"):
         db_name = db_name.replace(".db", "")
     pii_value = ""
-    tag_info_found = None
+    tag_info_found = False
+    db_missing_from_csv = False
 
     if db_name in csv_data:
         for table in csv_data[db_name]:
             if table_name == table["table"]:
                 pii_value = table["pii"]
                 tag_info_found = True
+    else:
+        db_missing_from_csv = True
 
     if type(pii_value) != str:
         pii_value = ""
 
-    if pii_value == "":
+    if db_missing_from_csv:
         logger.warning(
-            f'No PII classification found for {table_name} {db_name}", "table_name": "{table_name}", "db_name": "{db_name}'
+            f'Database is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}'
         )
+
+    if not tag_info_found:
+        logger.warning(
+            f'Table is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}'
+        )
+
+    elif pii_value == "":
+        logger.info(
+            f'No PII value as the table has yet to be classified ", "table_name": "{table_name}", "db_name": "{db_name}'
+        )
+
     try:
         s3_client.put_object_tagging(
             Bucket=s3_bucket,

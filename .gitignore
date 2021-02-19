@@ -9,6 +9,9 @@ terraform.tf
 aviator_pipeline.yml
 .DS_Store
 .vscode
+.pytest_cache
+.coverage
 **/__pycache__/
 *.pyc
 **/.venv/**
+**/htmlcov/**

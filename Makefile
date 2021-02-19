@@ -44,4 +44,9 @@ terraform-workspace-new: ## Creates new Terraform workspace with Concourse remot
 
 .PHONY: unit-tests
 unit-tests: ## Run unit tests
-	pytest test_s3_tagger.py .
+	pytest test_*.py
+
+.PHONY: unit-tests-html-coverage
+unit-tests-html-coverage: ## Run unit tests
+	coverage run -m pytest test_*.py
+	coverage html
