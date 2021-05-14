@@ -7,6 +7,8 @@ import socket
 import sys
 import boto3
 
+from concurrent.futures import ThreadPoolExecutor, wait
+
 NAME_KEY = "Key"
 
 
@@ -192,9 +194,8 @@ def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
     logger.info(f'Found objects to tag", "number_of_objects": "{len(objects_to_tag)}')
     tagged_objects_count = 0
 
-    for row in objects_to_tag:
-        is_tagged = tag_object(row, s3_client, s3_bucket, csv_data)
-        tagged_objects_count = tagged_objects_count + is_tagged
+    for result in tag_objects_threaded(objects_to_tag, s3_client, s3_bucket, csv_data):
+        tagged_objects_count = tagged_objects_count + result
 
     if tagged_objects_count == 0:
         logger.info(
@@ -202,6 +203,23 @@ def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
         )
     else:
         logger.info(f'Tagged", "objects_tagged_count": "{tagged_objects_count}')
+
+
+def tag_objects_threaded(objects_to_tag, s3_client, s3_bucket, csv_data):
+    with ThreadPoolExecutor() as executor:
+        future_results = []
+
+        for row in objects_to_tag:
+            future_results.append(
+                executor.submit(tag_object, row, s3_client, s3_bucket, csv_data)
+            )
+
+        wait(future_results)
+        for future in future_results:
+            try:
+                yield future.result()
+            except Exception as ex:
+                raise AssertionError(ex)
 
 
 def get_parameters():

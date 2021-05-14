@@ -72,6 +72,33 @@ def test_read_csv_exception():
 
 
 @mock_s3
+def test_tag_objects_threaded(objects_to_tag, csv_data):
+    s3_tagger.logger = mock.MagicMock()
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(
+        Bucket=BUCKET_TO_TAG,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/tab1/00000_0"
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db2/tab2/00000_0"
+    )
+    for result in s3_tagger.tag_objects_threaded(
+        objects_to_tag, s3_client, BUCKET_TO_TAG, csv_data
+    ):
+        assert result == 1, f"Expecting result to be 1, but got {result}"
+
+    response = s3_client.get_object_tagging(Bucket=BUCKET_TO_TAG, Key=objects_to_tag[1])
+    response2 = s3_client.get_object_tagging(
+        Bucket=BUCKET_TO_TAG, Key=objects_to_tag[0]
+    )
+    assert response["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
+    assert response2["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
+
+
+@mock_s3
 def test_tag_object(csv_data):
     s3_tagger.logger = mock.MagicMock()
     s3_client = boto3.client("s3")
