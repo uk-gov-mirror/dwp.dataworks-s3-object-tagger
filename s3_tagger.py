@@ -80,8 +80,13 @@ def read_csv(csv_location, s3_client):
 
 def tag_object(key, s3_client, s3_bucket, csv_data):
     split_string = key.split("/")
-    table_name = split_string[-2]
-    db_name = split_string[-3]
+    if not split_string[-1].endswith("$folder$"):
+        table_name = split_string[-2]
+        db_name = split_string[-3]
+    else:
+        table_name = split_string[-1][0:-8]
+        db_name = split_string[-2]
+
     if db_name.endswith(".db"):
         db_name = db_name.replace(".db", "")
     pii_value = ""
@@ -184,8 +189,9 @@ def filter_temp_files(objects_in_prefix):
     """
     objects_to_tag = []
     for object in objects_in_prefix:
-        if "$folder$" not in object[NAME_KEY]:
-            objects_to_tag.append(object[NAME_KEY])
+        # Need to tag temp files.
+        # if "$folder$" not in object[NAME_KEY]:
+        objects_to_tag.append(object[NAME_KEY])
     logger.info(f'Number of after filter "objects_filtered": "{len(objects_in_prefix)}')
     return objects_to_tag
 

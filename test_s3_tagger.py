@@ -262,7 +262,7 @@ def test_get_objects_in_prefix():
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/$folder$"
     )
     response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, DATA_S3_PREFIX, s3_client)
-    assert len(response) == 1, "invalid objects were not filtered out"
+    assert len(response) == 2, "invalid objects were not filtered out"
 
 
 @mock_s3
@@ -285,6 +285,7 @@ def test_get_objects_in_prefix_exception():
 
 @mock_s3
 def test_tag_path(objects_to_tag, csv_data):
+
     s3_tagger.logger = mock.MagicMock()
     s3_client = boto3.client("s3")
     s3_client.create_bucket(
@@ -304,6 +305,45 @@ def test_tag_path(objects_to_tag, csv_data):
     )
     assert response["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
     assert response2["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
+
+
+@mock_s3
+def test_tag_folder(csv_data):
+    objects_to_tag = [
+        "data/db1/tab1$folder$",
+        "data/db1/tab1/00000_0",
+        "data/db2/tab2$folder$",
+    ]
+
+    s3_tagger.logger = mock.MagicMock()
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(
+        Bucket=BUCKET_TO_TAG,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key=objects_to_tag[0]
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key=objects_to_tag[1]
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key=objects_to_tag[2]
+    )
+    s3_tagger.tag_path(objects_to_tag, s3_client, BUCKET_TO_TAG, csv_data)
+    response1 = s3_client.get_object_tagging(
+        Bucket=BUCKET_TO_TAG, Key=objects_to_tag[0]
+    )
+    response2 = s3_client.get_object_tagging(
+        Bucket=BUCKET_TO_TAG, Key=objects_to_tag[1]
+    )
+    response3 = s3_client.get_object_tagging(
+        Bucket=BUCKET_TO_TAG, Key=objects_to_tag[2]
+    )
+
+    assert response1["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
+    assert response2["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
+    assert response3["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
 
 
 @mock_s3
@@ -348,4 +388,4 @@ def test_tag_path_no_objects_tagged(csv_data):
 def test_filter_temp_files(s3_objects_with_temp_files):
     s3_tagger.logger = mock.MagicMock()
     response = s3_tagger.filter_temp_files(s3_objects_with_temp_files)
-    assert len(response) == 1, "invalid objects were not filtered out"
+    assert len(response) == 2, "invalid objects were not filtered out"
