@@ -18,7 +18,7 @@ BUCKET_TO_TAG = "buckettotag"
 
 @pytest.fixture(scope="session")
 def s3_objects_with_temp_files(pytestconfig):
-    objects_in_prefix = [{"Key": "data/db1/$folder$"}, {"Key": "data/db1/00000_0"}]
+    objects_in_prefix = [{"Key": "data/db1/_$folder$"}, {"Key": "data/db1/00000_0"}]
     return objects_in_prefix
 
 
@@ -34,7 +34,7 @@ def csv_data(pytestconfig):
 
 @pytest.fixture(scope="session")
 def objects_in_prefix(pytestconfig):
-    objects_in_prefix = ["data/db1/tab1/00000_0", "data/db1/$folder$"]
+    objects_in_prefix = ["data/db1/tab1/00000_0", "data/db1/_$folder$"]
     return objects_in_prefix
 
 
@@ -259,7 +259,7 @@ def test_get_objects_in_prefix():
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/tab1/00000_0"
     )
     s3_client.put_object(
-        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/$folder$"
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/_$folder$"
     )
     response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, DATA_S3_PREFIX, s3_client)
     assert len(response) == 2, "invalid objects were not filtered out"
@@ -277,7 +277,7 @@ def test_get_objects_in_prefix_exception():
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/tab1/00000_0"
     )
     s3_client.put_object(
-        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/$folder$"
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/_$folder$"
     )
     with pytest.raises(Exception):
         response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, "abcd", s3_client)
@@ -310,9 +310,9 @@ def test_tag_path(objects_to_tag, csv_data):
 @mock_s3
 def test_tag_folder(csv_data):
     objects_to_tag = [
-        "data/db1/tab1$folder$",
+        "data/db1/tab1_$folder$",
         "data/db1/tab1/00000_0",
-        "data/db2/tab2$folder$",
+        "data/db2/tab2_$folder$",
     ]
 
     s3_tagger.logger = mock.MagicMock()

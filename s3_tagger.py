@@ -80,11 +80,11 @@ def read_csv(csv_location, s3_client):
 
 def tag_object(key, s3_client, s3_bucket, csv_data):
     split_string = key.split("/")
-    if not split_string[-1].endswith("$folder$"):
+    if not split_string[-1].endswith("_$folder$"):
         table_name = split_string[-2]
         db_name = split_string[-3]
     else:
-        table_name = split_string[-1][0:-8]
+        table_name = split_string[-1][0:-9]
         db_name = split_string[-2]
 
     if db_name.endswith(".db"):
