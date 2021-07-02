@@ -10,3 +10,6 @@ groups:
     jobs:
       - mirror-dwpdigital-dataworks-s3-object-tagger-dev
       - mirror-dwpdigital-dataworks-s3-object-tagger
+  - name: update-pipeline
+    jobs:
+      - update-pipeline
