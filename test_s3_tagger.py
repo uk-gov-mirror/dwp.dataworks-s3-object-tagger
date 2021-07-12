@@ -266,7 +266,7 @@ def test_get_objects_in_prefix():
 
 
 @mock_s3
-def test_get_objects_in_prefix_exception():
+def test_get_objects_in_prefix_when_no_objects_present():
     s3_tagger.logger = mock.MagicMock()
     s3_client = boto3.client("s3")
     s3_client.create_bucket(
@@ -279,8 +279,7 @@ def test_get_objects_in_prefix_exception():
     s3_client.put_object(
         Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/_$folder$"
     )
-    with pytest.raises(Exception):
-        response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, "abcd", s3_client)
+    response = s3_tagger.get_objects_in_prefix(BUCKET_TO_TAG, "abcd", s3_client)
 
 
 @mock_s3

@@ -168,9 +168,13 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         page_iterator = paginator.paginate(Bucket=s3_bucket, Prefix=s3_prefix)
 
         for page in page_iterator:
-            objects_in_prefix.extend(page["Contents"])
+            if "Contents" in page:
+                objects_in_prefix.extend(page["Contents"])
 
-        logger.info(f'Number of "objects_returned": "{len(objects_in_prefix)}')
+        if len(objects_in_prefix) > 0:
+            logger.info(f'Number of "objects_returned": "{len(objects_in_prefix)}')
+        else:
+            logger.warn(f"No objects found to tag")
 
         return filter_temp_files(objects_in_prefix)
 
