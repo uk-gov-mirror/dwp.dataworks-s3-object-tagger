@@ -79,13 +79,43 @@ def read_csv(csv_location, s3_client):
 
 
 def tag_object(key, s3_client, s3_bucket, csv_data):
+
+    # TODO DELETE BEFORE PR
+    # s3://bucket/data/uc/uc/auditlog_sec_v/partitionname/datafile
+    # s3://bucket/data/uc/uc/auditlog_sec_v
+
+    #  partition key = s3://bucket/data/uc/uc/auditlog_sec_v/partitionname/datafile
+    # non partition key = s3://bucket/data/uc/uc/address_dim_v/000000_0
+    # csv data = row["db"]] = [{"table": row["table"], "pii": row["pii"]}
+
     split_string = key.split("/")
-    if not split_string[-1].endswith("_$folder$"):
-        table_name = split_string[-2]
-        db_name = split_string[-3]
-    else:
-        table_name = split_string[-1][0:-9]
-        db_name = split_string[-2]
+
+    # TODO possible try / get without index out of range
+    non_partition_table_name = split_string[-2]
+    non_partition_db_name = split_string[-3]
+
+    # TODO possible try / get without index out of range
+    partition_table_name = split_string[-3]
+    partition_db_name = split_string[-4]
+
+    table_name = ""
+    db_name = ""
+
+    if non_partition_db_name in csv_data:
+        if not split_string[-1].endswith("_$folder$"):
+            table_name = split_string[-2]
+            db_name = split_string[-3]
+        else:
+            table_name = split_string[-1][0:-9]
+            db_name = split_string[-2]
+
+    elif partition_db_name in csv_data:
+        if not split_string[-1].endswith("_$folder$"):
+            table_name = split_string[-3]
+            db_name = split_string[-4]
+        else:
+            table_name = split_string[-2]
+            db_name = split_string[-3]
 
     if db_name.endswith(".db"):
         db_name = db_name.replace(".db", "")
