@@ -383,6 +383,32 @@ def test_tag_path_for_partition(objects_to_tag_partitioned, csv_data):
 
 
 @mock_s3
+def test_tag_path_for_partition(objects_to_tag_partitioned, csv_data):
+    s3_tagger.logger = mock.MagicMock()
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(
+        Bucket=BUCKET_TO_TAG,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db1/tab1/partition1/00000_0"
+    )
+    s3_client.put_object(
+        Body="testcontent", Bucket=BUCKET_TO_TAG, Key="data/db2/tab2/partition2/00000_0"
+    )
+    s3_tagger.tag_path(objects_to_tag_partitioned, s3_client, BUCKET_TO_TAG, csv_data)
+
+    response = s3_client.get_object_tagging(
+        Bucket=BUCKET_TO_TAG, Key=objects_to_tag_partitioned[0]
+    )
+    response2 = s3_client.get_object_tagging(
+        Bucket=BUCKET_TO_TAG, Key=objects_to_tag_partitioned[1]
+    )
+    assert response["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
+    assert response2["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
+
+
+@mock_s3
 def test_tag_folder(csv_data):
     objects_to_tag = [
         "data/db1/tab1_$folder$",
@@ -436,6 +462,43 @@ def test_tag_folder(csv_data):
     assert response3["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
     assert response4["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
     assert response5["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
+
+
+@mock_s3
+def test_items_that_dont_match_expected_pattern():
+    csv_data = {
+        "db1": [{"table": "tab1", "pii": "false"}],
+        "db2": [{"table": "tab2", "pii": "false"}],
+        "db3": [{"table": "tab3", "pii": "false"}],
+    }
+
+    key = "data/e2e_test_file"
+
+    s3_tagger.logger = mock.MagicMock()
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(
+        Bucket=BUCKET_TO_TAG,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+    )
+    s3_client.put_object(Body="testcontent", Bucket=BUCKET_TO_TAG, Key=key)
+
+    tag_result = s3_tagger.tag_object(key, s3_client, BUCKET_TO_TAG, csv_data)
+
+    call_count = s3_tagger.logger.warning.call_count
+
+    s3_tagger.logger.warning.assert_has_calls(
+        [
+            mock.call(log)
+            for log in [
+                f'Skipping file as it doesn\'t appear to match output pattern", "key": "{key}"'
+            ]
+        ]
+    )
+
+    assert (
+        not call_count > 1
+    ), f"Expected logger.warning to only be called twice, called {call_count} times"
+    assert tag_result == 0, f"Expected tag_object to return 0, got: {tag_result}"
 
 
 @mock_s3

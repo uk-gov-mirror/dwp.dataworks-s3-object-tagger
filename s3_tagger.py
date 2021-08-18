@@ -84,28 +84,40 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
     db_name = ""
     attempt_to_tag = False
 
-    if split_string[-1].endswith("_$folder$"):
-        split_string[-1] = split_string[-1][0:-9]
-
-    if split_string[-2] in csv_data:
-        db_name = split_string[-2]
-        table_name = split_string[-1]
-        attempt_to_tag = True
-
-    elif split_string[-3] in csv_data:
-        db_name = split_string[-3]
-        table_name = split_string[-2]
-        attempt_to_tag = True
-
-    elif split_string[-4] in csv_data:
-        db_name = split_string[-4]
-        table_name = split_string[-3]
-        attempt_to_tag = True
-
-    else:
+    if len(split_string) < 3:
         logger.warning(
-            f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"'
+            f'Skipping file as it doesn\'t appear to match output pattern", "key": "{key}"'
         )
+        return 0
+
+    try:
+        if split_string[-1].endswith("_$folder$"):
+            split_string[-1] = split_string[-1][0:-9]
+
+        if split_string[-2] in csv_data:
+            db_name = split_string[-2]
+            table_name = split_string[-1]
+            attempt_to_tag = True
+
+        elif split_string[-3] in csv_data:
+            db_name = split_string[-3]
+            table_name = split_string[-2]
+            attempt_to_tag = True
+
+        elif split_string[-4] in csv_data:
+            db_name = split_string[-4]
+            table_name = split_string[-3]
+            attempt_to_tag = True
+
+        else:
+            logger.warning(
+                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"'
+            )
+    except Exception as e:
+        logger.error(
+            f'Caught exception when attempting to establish database name from key", "key": "{key}"'
+        )
+        raise e
 
     if db_name.endswith(".db"):
         db_name = db_name.replace(".db", "")
@@ -172,8 +184,6 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
     # remove tailing or leading / from prefix
     if s3_prefix.startswith("/"):
         s3_prefix = s3_prefix.lstrip("/")
-    if s3_prefix.endswith("/"):
-        s3_prefix = s3_prefix.rstrip("/")
 
     try:
         logger.info(
@@ -192,7 +202,7 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         if len(objects_in_prefix) > 0:
             logger.info(f'Number of "objects_returned": "{len(objects_in_prefix)}')
         else:
-            logger.warn(f"No objects found to tag")
+            logger.warning(f"No objects found to tag")
 
         return filter_temp_files(objects_in_prefix)
 
