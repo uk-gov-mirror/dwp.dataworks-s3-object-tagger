@@ -80,60 +80,78 @@ def read_csv(csv_location, s3_client):
 
 def tag_object(key, s3_client, s3_bucket, csv_data):
     split_string = key.split("/")
-    if not split_string[-1].endswith("_$folder$"):
-        table_name = split_string[-2]
-        db_name = split_string[-3]
-    else:
-        table_name = split_string[-1][0:-9]
+    table_name = ""
+    db_name = ""
+    attempt_to_tag = False
+
+    if split_string[-1].endswith("_$folder$"):
+        split_string[-1] = split_string[-1][0:-9]
+
+    if split_string[-2] in csv_data:
         db_name = split_string[-2]
+        table_name = split_string[-1]
+        attempt_to_tag = True
+
+    elif split_string[-3] in csv_data:
+        db_name = split_string[-3]
+        table_name = split_string[-2]
+        attempt_to_tag = True
+
+    elif split_string[-4] in csv_data:
+        db_name = split_string[-4]
+        table_name = split_string[-3]
+        attempt_to_tag = True
+
+    else:
+        logger.warning(
+            f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"'
+        )
 
     if db_name.endswith(".db"):
         db_name = db_name.replace(".db", "")
+
     pii_value = ""
     tag_info_found = False
-    db_missing_from_csv = False
 
-    if db_name in csv_data:
+    if attempt_to_tag:
         for table in csv_data[db_name]:
             if table_name == table["table"]:
                 pii_value = table["pii"]
                 tag_info_found = True
-    else:
-        db_missing_from_csv = True
 
     if type(pii_value) != str:
         pii_value = ""
 
-    if db_missing_from_csv:
-        logger.warning(
-            f'Database is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}'
-        )
-
     if not tag_info_found:
         logger.warning(
-            f'Table is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}'
+            f'Table is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}", "key": "{key}"'
         )
 
     elif pii_value == "":
-        logger.info(
-            f'No PII value as the table has yet to be classified ", "table_name": "{table_name}", "db_name": "{db_name}'
+        logger.warning(
+            f'No PII value as the table has yet to be classified ", "table_name": "{table_name}", "db_name": "{db_name}", "key": "{key}"'
         )
 
-    try:
-        s3_client.put_object_tagging(
-            Bucket=s3_bucket,
-            Key=key,
-            Tagging={
-                "TagSet": [
-                    {"Key": "db", "Value": db_name},
-                    {"Key": "table", "Value": table_name},
-                    {"Key": "pii", "Value": pii_value},
-                ]
-            },
+    if attempt_to_tag:
+        try:
+            s3_client.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=key,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "db", "Value": db_name},
+                        {"Key": "table", "Value": table_name},
+                        {"Key": "pii", "Value": pii_value},
+                    ]
+                },
+            )
+            logger.info(f'Successfully tagged", "object": "{key}')
+        except Exception as err:
+            logger.error(f'Failed to tag", "object": "{key}", "error_message": "{err}')
+    else:
+        logger.warning(
+            f'Not attempting to tag due to invalid database or table name", "key": "{key}"'
         )
-        logger.info(f'Successfully tagged", "object": "{key}')
-    except Exception as err:
-        logger.error(f'Failed to tag", "object": "{key}", "error_message": "{err}')
 
     if tag_info_found:
         return 1

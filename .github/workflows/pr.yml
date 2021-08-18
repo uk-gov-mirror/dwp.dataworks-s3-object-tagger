@@ -29,6 +29,9 @@ jobs:
       - name: Install requirements_dev.txt
         run: pip install -r requirements_dev.txt
 
+      - name: unit-tests
+        run: make unit-tests
+
       - name: Run black --check .
         id: check-formatting
         run: black --check .
@@ -37,17 +40,14 @@ jobs:
       - name: If needed, commit black changes to the pull request
         if: ${{ steps.check-formatting.outcome == 'failure' }}
         run: |
-          black .
           git config --global user.name ${{ secrets.CI_GITHUB_USERNAME }}
           git config --global user.email ${{ secrets.CI_GITHUB_EMAIL }}
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
           git fetch
           git checkout $GITHUB_HEAD_REF
+          black .
           git commit -am "Fixup: Format Python code with Black"
           git push
-
-      - name: unit-tests
-        run: make unit-tests
 
       - name: Build Docker image
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
