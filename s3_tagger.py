@@ -91,9 +91,17 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
     if len(split_string) < 3:
         logger.warning(
-            f'Skipping file as it doesn\'t appear to match output pattern", "key": "{key}"'
+            f'Skipping file as it doesn\'t appear to match output pattern", "key": "{key}'
         )
         return 0
+
+    substring_in_list = any(".db" in item for item in split_string)
+
+    if substring_in_list:
+        for index, value in enumerate(split_string):
+            split_string[index] = (
+                value.replace(".db", "") if value.endswith(".db") else value
+            )
 
     try:
         if split_string[-1].endswith("_$folder$"):
@@ -116,17 +124,14 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
         else:
             logger.warning(
-                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"'
+                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}'
             )
             return 0
     except Exception as e:
         logger.error(
-            f'Caught exception when attempting to establish database name from key. Not tagging and continuing on", "key": "{key}", "exception": "{e}"'
+            f'Caught exception when attempting to establish database name from key. Not tagging and continuing on", "key": "{key}", "exception": "{e}'
         )
         return 0
-
-    if db_name.endswith(".db"):
-        db_name = db_name.replace(".db", "")
 
     pii_value = ""
     tag_info_found = False
@@ -142,12 +147,12 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
     if not tag_info_found:
         logger.warning(
-            f'Table is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}", "key": "{key}"'
+            f'Table is missing from the CSV data ", "table_name": "{table_name}", "db_name": "{db_name}", "key": "{key}'
         )
 
     elif pii_value == "":
         logger.warning(
-            f'No PII value as the table has yet to be classified ", "table_name": "{table_name}", "db_name": "{db_name}", "key": "{key}"'
+            f'No PII value as the table has yet to be classified ", "table_name": "{table_name}", "db_name": "{db_name}", "key": "{key}'
         )
 
     if attempt_to_tag:

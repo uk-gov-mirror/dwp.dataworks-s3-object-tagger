@@ -176,7 +176,7 @@ def test_tag_object_tag_info_not_found():
     call_count = s3_tagger.logger.warning.call_count
 
     s3_tagger.logger.warning.assert_called_once_with(
-        'Table is missing from the CSV data ", "table_name": "tab2", "db_name": "db1", "key": "data/db1/tab2/00000_0"'
+        f'Table is missing from the CSV data ", "table_name": "tab2", "db_name": "db1", "key": "{key}'
     )
 
     s3_tagger.logger.info.assert_called_once_with(
@@ -216,7 +216,7 @@ def test_tag_object_unrecognised_key_for_database_and_table_name():
         [
             mock.call(log)
             for log in [
-                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"',
+                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}',
             ]
         ]
     )
@@ -253,7 +253,7 @@ def test_tag_object_unrecognised_key_for_database_and_table_name_length_two():
         [
             mock.call(log)
             for log in [
-                f'Skipping file as it doesn\'t appear to match output pattern", "key": "{key}"'
+                f'Skipping file as it doesn\'t appear to match output pattern", "key": "{key}'
             ]
         ]
     )
@@ -289,7 +289,7 @@ def test_tag_object_unrecognised_key_for_database_and_table_name_length_three():
         [
             mock.call(log)
             for log in [
-                f'Caught exception when attempting to establish database name from key. Not tagging and continuing on", "key": "{key}", "exception": "list index out of range"',
+                f'Caught exception when attempting to establish database name from key. Not tagging and continuing on", "key": "{key}", "exception": "list index out of range',
             ]
         ]
     )
@@ -325,7 +325,7 @@ def test_tag_object_unrecognised_key_for_database_and_table_name_length_six():
         [
             mock.call(log)
             for log in [
-                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"',
+                f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}',
             ]
         ]
     )
@@ -334,6 +334,29 @@ def test_tag_object_unrecognised_key_for_database_and_table_name_length_six():
         not call_count > 1
     ), f"Expected logger.warning to only be called twice, called {call_count} times"
     assert tag_result == 0, f"Expected tag_object to return 0, got: {tag_result}"
+
+
+@mock_s3
+def test_dropping_database_trailing_dot_db(csv_data):
+
+    key = "data/db1.db/tab1/0000_0"
+
+    s3_tagger.logger = mock.MagicMock()
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(
+        Bucket=BUCKET_TO_TAG,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+    )
+    s3_client.put_object(Body="testcontent", Bucket=BUCKET_TO_TAG, Key=key)
+
+    tag_result = s3_tagger.tag_object(key, s3_client, BUCKET_TO_TAG, csv_data)
+    response = s3_client.get_object_tagging(Bucket=BUCKET_TO_TAG, Key=key)
+
+    assert not s3_tagger.logger.warning.called
+    assert tag_result == 1, f"Expected tag_object to return 0, got: {tag_result}"
+    assert response["TagSet"][0]["Value"] == "db1", "Object was not tagged correctly"
+    assert response["TagSet"][1]["Value"] == "tab1", "Object was not tagged correctly"
+    assert response["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
 
 
 @mock_s3
@@ -414,15 +437,6 @@ def test_tag_path(objects_to_tag, csv_data):
     )
     assert response["TagSet"][2]["Value"] == "true", "Object was not tagged correctly"
     assert response2["TagSet"][2]["Value"] == "false", "Object was not tagged correctly"
-
-
-@pytest.fixture(scope="session")
-def objects_to_tag_partitioned(pytestconfig):
-    objects_to_tag = [
-        "data/db1/tab1/partition1/00000_0",
-        "data/db2/tab2/partition2/00000_0",
-    ]
-    return objects_to_tag
 
 
 @mock_s3
