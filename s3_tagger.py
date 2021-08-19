@@ -6,10 +6,15 @@ import re
 import socket
 import sys
 import boto3
+import botocore
 
 from concurrent.futures import ThreadPoolExecutor, wait
 
 NAME_KEY = "Key"
+
+boto_client_config = botocore.config.Config(
+    max_pool_connections=100, retries={"max_attempts": 10, "mode": "standard"}
+)
 
 
 def setup_logging(logger_level):
@@ -113,11 +118,12 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
             logger.warning(
                 f'Couldn\'t establish a valid database and table name for key ", "table_name": "", "db_name": "", "key": "{key}"'
             )
+            return 0
     except Exception as e:
         logger.error(
-            f'Caught exception when attempting to establish database name from key", "key": "{key}"'
+            f'Caught exception when attempting to establish database name from key. Not tagging and continuing on", "key": "{key}", "exception": "{e}"'
         )
-        raise e
+        return 0
 
     if db_name.endswith(".db"):
         db_name = db_name.replace(".db", "")
@@ -173,7 +179,7 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
 
 def get_s3():
     try:
-        s3_client = boto3.client("s3")
+        s3_client = boto3.client("s3", config=boto_client_config)
         return s3_client
     except Exception as err:
         logger.error(f'Failed to create an S3 client", "error_message": "{err}')
