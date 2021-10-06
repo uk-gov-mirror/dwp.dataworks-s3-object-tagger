@@ -95,6 +95,9 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
         )
         return 0
 
+    if split_string[-1].endswith("_$folder$"):
+        split_string[-1] = split_string[-1][0:-9]
+
     substring_in_list = any(".db" in item for item in split_string)
 
     if substring_in_list:
@@ -104,9 +107,6 @@ def tag_object(key, s3_client, s3_bucket, csv_data):
             )
 
     try:
-        if split_string[-1].endswith("_$folder$"):
-            split_string[-1] = split_string[-1][0:-9]
-
         if split_string[-2] in csv_data:
             db_name = split_string[-2]
             table_name = split_string[-1]
@@ -215,28 +215,13 @@ def get_objects_in_prefix(s3_bucket, s3_prefix, s3_client):
         else:
             logger.warning(f"No objects found to tag")
 
-        return filter_temp_files(objects_in_prefix)
+        return [object_[NAME_KEY] for object_ in objects_in_prefix]
 
     except Exception as err:
         logger.error(
             f'Failed to list objects", "data_bucket": "{s3_bucket}", "data_s3_prefix": "{s3_prefix}", "error_message":"{err}'
         )
         raise err
-
-
-def filter_temp_files(objects_in_prefix):
-    """
-    Filter out temp folders that do not hold any objects for tagging
-    :param objects_in_prefix: list of all objects in the prefix
-    :return: list of objects without temp files
-    """
-    objects_to_tag = []
-    for object in objects_in_prefix:
-        # Need to tag temp files.
-        # if "$folder$" not in object[NAME_KEY]:
-        objects_to_tag.append(object[NAME_KEY])
-    logger.info(f'Number of after filter "objects_filtered": "{len(objects_in_prefix)}')
-    return objects_to_tag
 
 
 def tag_path(objects_to_tag, s3_client, s3_bucket, csv_data):
