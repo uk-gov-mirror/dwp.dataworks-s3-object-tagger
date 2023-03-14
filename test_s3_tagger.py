@@ -388,7 +388,6 @@ def test_tag_object_unrecognised_key_for_database_and_table_name_length_six():
 
 @mock_s3
 def test_dropping_database_trailing_dot_db(csv_data):
-
     key = "data/db1.db/tab1/0000_0"
 
     s3_tagger.logger = mock.MagicMock()
@@ -467,7 +466,6 @@ def test_get_objects_in_prefix_when_no_objects_present():
 
 @mock_s3
 def test_tag_path(objects_to_tag, csv_data):
-
     s3_tagger.logger = mock.MagicMock()
     s3_client = boto3.client("s3")
     s3_client.create_bucket(
